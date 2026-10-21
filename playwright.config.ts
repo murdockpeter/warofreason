@@ -1,7 +1,16 @@
 import { defineConfig } from '@playwright/test';
 export default defineConfig({
   testDir: 'tests/e2e',
-  testMatch: ['desktop.spec.ts', 'persistence.spec.ts', 'fontenoy.spec.ts'],
+  testMatch: [
+    'desktop.spec.ts',
+    'persistence.spec.ts',
+    'fontenoy.spec.ts',
+    'operations.spec.ts',
+    'tabletop.spec.ts',
+    'aftermath.spec.ts',
+    'map-play.spec.ts',
+    'player-guide.spec.ts',
+  ],
   workers: 1,
   timeout: 45000,
   reporter: 'list',

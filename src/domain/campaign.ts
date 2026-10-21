@@ -1,4 +1,11 @@
 import { z } from 'zod';
+import { jsonEqual } from './json-equal';
+import { aftermathSchema, aftermathReceiptSchema } from './aftermath-schema';
+import {
+  applyAftermathCommand,
+  aftermathCategories,
+  aftermathIssues,
+} from './aftermath';
 import * as legacy from './legacy-campaign';
 import { factionSchema } from './vocabulary';
 import {
@@ -8,6 +15,19 @@ import {
   fontenoyUnitSchema,
 } from './fontenoy-schema';
 import { forceIssues, setupIssues } from './fontenoy';
+import { operationsSchema } from './operations-schema';
+import { tabletopSchema, tabletopReceiptSchema } from './tabletop-schema';
+import {
+  applyTabletopCommand,
+  tabletopCategories,
+  tabletopIssues,
+} from './tabletop';
+import {
+  applyOperationalCommand,
+  campaignDate,
+  operationsIssues,
+  operationalCategories,
+} from './operations';
 export { idSchema, titleSchema } from './legacy-campaign';
 
 const configuredBase = legacy.campaignBaseSchema.extend({
@@ -15,7 +35,10 @@ const configuredBase = legacy.campaignBaseSchema.extend({
   moduleVersion: z.literal('0.1.0'),
   rulesetVersion: z.literal('house_rule_v0.1'),
   status: z.enum(['draft', 'active', 'archived']),
-  turn: z.number().int().min(0).max(1),
+  turn: z.number().int().min(0).max(100),
+  operations: operationsSchema.optional(),
+  tabletop: tabletopSchema.optional(),
+  aftermath: aftermathSchema.optional(),
   date: z.iso.date().nullable(),
   activeSide: factionSchema.nullable(),
   settings: fontenoySettingsSchema,
@@ -28,8 +51,12 @@ export type FontenoyCampaign = z.infer<typeof configuredBase>;
 export const fontenoyCampaignSchema = configuredBase.superRefine(
   (campaign, ctx) => {
     // Reuse the legacy aggregate integrity checks, with only v2-specific metadata removed.
+    const referenceCampaign = { ...campaign };
+    delete referenceCampaign.operations;
+    delete referenceCampaign.tabletop;
+    delete referenceCampaign.aftermath;
     const referenceCheck = legacy.campaignSchema.safeParse({
-      ...campaign,
+      ...referenceCampaign,
       schemaVersion: 1,
       moduleVersion: 'unconfigured',
       rulesetVersion: 'unconfigured',
@@ -87,6 +114,14 @@ export const fontenoyCampaignSchema = configuredBase.superRefine(
       issue(['factions'], 'The module requires French and Allied factions.');
     const side = new Map(campaign.factions.map((f) => [f.id, f.side]));
     campaign.units.forEach((unit, index) => {
+      if (
+        unit.initialQuality &&
+        !['regular_infantry', 'regular_cavalry'].includes(unit.type)
+      )
+        issue(
+          ['units', index],
+          'Only regular units can retain an opening quality for rebuilding.',
+        );
       if (
         side.get(unit.factionId) !==
         (unit.contingent === 'french' ? 'french' : 'allied')
@@ -157,11 +192,15 @@ export const fontenoyCampaignSchema = configuredBase.superRefine(
         ['status'],
         'A draft has not begun and has no current day or active side.',
       );
-    if (campaign.turn === 1) {
+    if (campaign.turn > 0) {
       if (
         campaign.status === 'draft' ||
-        campaign.date !== campaign.settings.schedule.startDate ||
-        campaign.activeSide !== campaign.settings.schedule.firstSide
+        campaign.turn > campaign.settings.schedule.turnCount ||
+        campaign.date !== campaignDate(campaign, campaign.turn) ||
+        campaign.activeSide === null ||
+        (!campaign.operations &&
+          (campaign.turn !== 1 ||
+            campaign.activeSide !== campaign.settings.schedule.firstSide))
       )
         issue(
           ['status'],
@@ -169,6 +208,12 @@ export const fontenoyCampaignSchema = configuredBase.superRefine(
         );
       for (const message of setupIssues(campaign)) issue(['settings'], message);
     }
+    for (const message of operationsIssues(campaign))
+      issue(['operations'], message);
+    for (const message of tabletopIssues(campaign))
+      issue(['tabletop'], message);
+    for (const message of aftermathIssues(campaign))
+      issue(['aftermath'], message);
   },
 );
 export const campaignSchema = z.discriminatedUnion('schemaVersion', [
@@ -186,10 +231,32 @@ export const campaignEventSchema = legacy.campaignEventSchema.extend({
     'scenario_loaded',
     'setup_changed',
     'started',
+    'operations_enabled',
+    'movement_rules_changed',
+    'orders_issued',
+    'orders_reopened',
+    'orders_resolved',
+    'formation_split',
+    'scouting_rules_changed',
+    'scouted',
+    'battle_declared',
+    'battle_started',
+    'battle_result_recorded',
+    'aftermath_enabled',
+    'aftermath_rules_changed',
+    'battle_aftermath_applied',
+    'siege_conditions_recorded',
+    'campaign_exhaustion_recorded',
+    'campaign_turn_finalized',
+    'commander_arrived',
+    'commander_status_changed',
+    'commander_attached',
   ]),
   rulesetVersion: z.enum(['unconfigured', 'house_rule_v0.1']),
   before: campaignSchema.nullable(),
   after: campaignSchema,
+  tabletopAction: tabletopReceiptSchema.optional(),
+  aftermathAction: aftermathReceiptSchema.optional(),
 });
 export type CampaignEvent = z.infer<typeof campaignEventSchema>;
 const currentExportSchema = z
@@ -207,13 +274,23 @@ const currentExportSchema = z
     for (const [index, event] of value.events.entries()) {
       const issue = (message: string) =>
         ctx.addIssue({ code: 'custom', path: ['events', index], message });
+      const tabletopKind = (
+        Object.keys(tabletopCategories) as (keyof typeof tabletopCategories)[]
+      ).find((kind) => tabletopCategories[kind] === event.category);
+      if (!!tabletopKind !== !!event.tabletopAction)
+        issue('Only tabletop events require an action receipt.');
+      const aftermathKind = (
+        Object.keys(aftermathCategories) as (keyof typeof aftermathCategories)[]
+      ).find((kind) => aftermathCategories[kind] === event.category);
+      if (!!aftermathKind !== !!event.aftermathAction)
+        issue('Only aftermath events require their action receipt.');
       if (ids.has(event.id)) issue('Duplicate event ID.');
       ids.add(event.id);
       if (
         event.campaignId !== value.campaign.id ||
         event.after.id !== value.campaign.id ||
         event.after.revision !== index + 1 ||
-        JSON.stringify(event.before) !== JSON.stringify(previous)
+        !jsonEqual(event.before, previous)
       )
         issue(
           'Journal revisions and snapshots must form an unbroken chain for one campaign.',
@@ -236,6 +313,15 @@ const currentExportSchema = z
           issue('Campaign identity and chronology must remain stable.');
         if (previous.status === 'archived' && event.category !== 'imported')
           issue('Archived records are read-only.');
+        if (
+          Object.values(operationalCategories).some(
+            (category) => category === event.category,
+          ) &&
+          (previous.schemaVersion !== 2 || event.after.schemaVersion !== 2)
+        )
+          issue(
+            'Operational journal actions require configured campaign snapshots.',
+          );
         let expected: Record<string, unknown> = {
           ...previous,
           revision: event.after.revision,
@@ -283,12 +369,103 @@ const currentExportSchema = z
             date: previous.settings.schedule.startDate,
             activeSide: previous.settings.schedule.firstSide,
           };
-        if (JSON.stringify(expected) !== JSON.stringify(event.after))
+        if (previous.schemaVersion === 2 && event.after.schemaVersion === 2) {
+          if (aftermathKind && event.aftermathAction) {
+            try {
+              if (
+                event.aftermathAction.command.kind !== aftermathKind ||
+                event.aftermathAction.timestamp !== event.timestamp
+              )
+                throw new Error('Mismatched aftermath receipt.');
+              expected = {
+                ...applyAftermathCommand(previous, event.aftermathAction),
+                revision: event.after.revision,
+                updatedAt: event.timestamp,
+              };
+            } catch {
+              issue('Aftermath journal action is invalid.');
+            }
+          }
+          if (tabletopKind && event.tabletopAction) {
+            try {
+              if (
+                event.tabletopAction.command.kind !== tabletopKind ||
+                event.tabletopAction.timestamp !== event.timestamp
+              )
+                throw new Error('Mismatched tabletop receipt.');
+              expected = {
+                ...applyTabletopCommand(previous, event.tabletopAction),
+                revision: event.after.revision,
+                updatedAt: event.timestamp,
+              };
+            } catch {
+              issue('Tabletop journal action is invalid.');
+            }
+          }
+          const kind = (
+            Object.keys(
+              operationalCategories,
+            ) as (keyof typeof operationalCategories)[]
+          ).find((key) => operationalCategories[key] === event.category);
+          if (kind) {
+            try {
+              const beforeColumns = previous.columns;
+              const command =
+                kind === 'split'
+                  ? (() => {
+                      const added =
+                        event.after.schemaVersion === 2
+                          ? event.after.columns.filter(
+                              (c) => !beforeColumns.some((p) => p.id === c.id),
+                            )
+                          : [];
+                      if (added.length !== 1)
+                        throw new Error('Expected one new formation.');
+                      const column = added[0]!;
+                      const source = beforeColumns.find((c) =>
+                        column.unitIds.every((id) => c.unitIds.includes(id)),
+                      );
+                      if (!source) throw new Error('Missing split source.');
+                      return {
+                        kind,
+                        columnId: source.id,
+                        newColumnId: column.id,
+                        displayName: column.displayName,
+                        unitIds: column.unitIds,
+                        commanderIds: column.commanderIds,
+                      };
+                    })()
+                  : kind === 'configure'
+                    ? { kind, rules: event.after.operations!.rules }
+                    : kind === 'issue'
+                      ? { kind, orders: event.after.operations!.orders }
+                      : { kind };
+              expected = {
+                ...applyOperationalCommand(previous, command),
+                revision: event.after.revision,
+                updatedAt: event.timestamp,
+              };
+            } catch {
+              issue('Operational journal action is invalid.');
+            }
+          }
+        }
+        if (
+          tabletopKind &&
+          (previous.schemaVersion !== 2 || event.after.schemaVersion !== 2)
+        )
+          issue('Tabletop actions require configured campaigns.');
+        if (
+          aftermathKind &&
+          (previous.schemaVersion !== 2 || event.after.schemaVersion !== 2)
+        )
+          issue('Aftermath actions require configured campaigns.');
+        if (!jsonEqual(expected, event.after))
           issue('Recorded change does not match its journal category.');
       }
       previous = event.after;
     }
-    if (JSON.stringify(previous) !== JSON.stringify(value.campaign))
+    if (!jsonEqual(previous, value.campaign))
       ctx.addIssue({
         code: 'custom',
         path: ['campaign'],

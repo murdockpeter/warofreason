@@ -1,7 +1,12 @@
 import { expect, test } from '@playwright/test';
 import type { ElectronApplication, Page } from '@playwright/test';
 import path from 'node:path';
-import { launchDesktop, removeTestProfile, testProfile } from './profile';
+import {
+  navigateTo,
+  launchDesktop,
+  removeTestProfile,
+  testProfile,
+} from './profile';
 import { SqliteCampaignRepository } from '../../src/main/persistence/repository';
 import { campaignFixture, exportFixture } from '../fixtures/campaign';
 
@@ -43,7 +48,15 @@ for (const packaged of [false, true]) {
           name: 'Schematic 12-column by 8-row map with eight named locations',
         }),
       ).toBeVisible();
-      await page.getByRole('button', { name: 'Edit setup' }).click();
+      const reviewConfirmation = page.getByRole('checkbox', {
+        name: 'I reviewed the provisional operational setup and schedule.',
+      });
+      await expect(reviewConfirmation).toBeEnabled();
+      await reviewConfirmation.check();
+      await expect(reviewConfirmation).toBeChecked();
+      await expect(
+        page.getByRole('button', { name: 'Save setup' }),
+      ).toBeEnabled();
       const unit = seeded.units[0]!;
       await page
         .getByRole('combobox', {
@@ -176,6 +189,7 @@ for (const packaged of [false, true]) {
       app = null;
       app = await launchDesktop(profile, packaged);
       page = await app.firstWindow();
+      await navigateTo(page, 'Dashboard');
       await expect(
         page.getByRole('region', { name: 'Open campaign', exact: true }),
       ).toContainText('Campaign started');
@@ -207,12 +221,10 @@ for (const packaged of [false, true]) {
       expect(imported.units).toEqual(started.units);
       expect(imported.columns).toEqual(started.columns);
       expect(imported.settings).toEqual(started.settings);
-      await page
-        .getByRole('button', { name: 'Campaign Map', exact: true })
-        .click();
+      await navigateTo(page, 'Campaign Map');
       await expect(
-        page.getByRole('img', {
-          name: 'Schematic 12-column by 8-row map with eight named locations',
+        page.getByRole('group', {
+          name: 'Selectable campaign squares and columns',
         }),
       ).toBeVisible();
     } finally {

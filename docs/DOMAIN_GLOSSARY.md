@@ -1,4 +1,19 @@
-# Domain glossary (Milestone B)
+# Domain glossary
+
+- **Campaign aftermath:** a separate confirmed review of a frozen battle result, recording losses/rebuilding, scheduled rest, commander decisions, agreed squares, manual Epic Points and independent exhaustion additions. It releases the battle hold once and retains the original tactical record.
+- **Opening/current quality:** `initialQuality` retains a rebuilt regular unit's opening elite/trained fact; `quality` is its current classification, including conscript. Scenario totals validate opening facts, while new briefs use current classification. Artillery/irregular quality remains null.
+- **Completed-turn checkpoint:** an explicit pause after both faction phases; finalization processes due recoveries, verified supplied investment and victory once after all encounters/results/reviews are complete. An outcome locks further strategic play.
+- **Epic Points:** manually entered per-side battle values, with nullable unrecorded entries and a summary; no official formula is inferred. **Campaign exhaustion** is a separate operational total, not per-battle Army Morale.
+- **Commander campaign status:** active/lost/retired with explicit arrivals and friendly attachments; unavailable officers detach. Private Notable references do not execute tactical effects.
+
+- **Scouting report / contact:** an umpire-adjudicated roll, modifier and reason, recorded with observer, campaign day/turn, audit timestamp, observed snapshot and expiry. Unknown releases nothing; located releases an observed square; estimated adds approved text; identified releases the observed roster/name/commanders. The latest report supersedes earlier reports; expiration does not revive old intelligence.
+- **Battle declaration / brief:** a frozen shared record of an engagement's selected initial/reinforcement forces, unit types/qualities, commanders/Notable names, origins, entry edges and agreed setup notes. Participants are committed and cannot be used in another battle or movement order.
+- **Manual battle result:** a confirmed, immutable played-tabletop outcome with one result per committed unit and commander, optional final disruption and battle Army Morale. It does not itself change campaign readiness/quality, commander state, siege or victory. Those effects belong to F.
+
+- **Operational phase:** planning (unissued draft orders may be edited/undone), resolution (issued orders saved, movement not yet committed), or finished (the configured deadline has been reached). A return to planning preserves earlier issued snapshots in the journal.
+- **Movement order:** one column's path including its origin and orthogonally adjacent steps. A one-square path means hold. Unordered columns also hold. Costs and blocks are versioned provisional house rules.
+- **Engagement candidate:** deterministic hostile contact record, pending Milestone E. Movement stops before the occupied square; participants are held. It is not a declared battle or an automated tactical outcome.
+- **Faction view:** allowlisted projection that omits concealed opponents and all opposing rosters, commanders and orders. Faction JSON excludes history and is not a backup. The umpire view/full backup retains everything on the shared local desktop.
 
 - **Campaign draft:** a saved preparation record. Legacy schema-1 drafts are unconfigured; schema-2 drafts contain the Fontenoy forces and proposed operational setup. Turn remains zero, with no current campaign date or active faction, until Start Campaign. This is distinct from an uncommitted form/setup edit.
 - **Uncommitted edit:** transient form input, retained across screen navigation and undoable until saved/discarded. It is not a campaign action and creates no journal event.

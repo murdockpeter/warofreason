@@ -1,0 +1,14 @@
+{
+  "ruleId": "house_rule_v0.1/aftermath-1",
+  "strategy": "conscript_rebuild_v1",
+  "allowRegularRebuild": true,
+  "irregularRecovery": "lost",
+  "artilleryRecovery": "lost",
+  "recoveryTurns": 1,
+  "retiredRestTurns": 0,
+  "siegeThreshold": 6,
+  "siegeIncrement": 1,
+  "exhaustionThreshold": 10,
+  "deadlineOutcome": "allied",
+  "conflictOutcome": "draw"
+}

@@ -21,6 +21,8 @@ export type SetupCommand =
   | { kind: 'scale'; value: number | null }
   | { kind: 'add-road'; from: string; to: string }
   | { kind: 'remove-road'; from: string; to: string }
+  | { kind: 'add-river'; from: string; to: string }
+  | { kind: 'remove-river'; from: string; to: string }
   | {
       kind: 'acknowledge';
       field: 'reviewedHouseRules' | 'reviewedSchematicMap';
@@ -143,6 +145,22 @@ export function editSetup(
       break;
     case 'acknowledge':
       draft.settings[command.field] = command.value;
+      break;
+    case 'add-river':
+      draft.settings.map.riverEdges.push({
+        from: command.from,
+        to: command.to,
+        provenance: 'house_rule_v0.1',
+      });
+      break;
+    case 'remove-river':
+      draft.settings.map.riverEdges = draft.settings.map.riverEdges.filter(
+        (edge) =>
+          !(
+            (edge.from === command.from && edge.to === command.to) ||
+            (edge.from === command.to && edge.to === command.from)
+          ),
+      );
       break;
   }
   return draft;

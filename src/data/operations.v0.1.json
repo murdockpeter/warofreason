@@ -1,0 +1,8 @@
+{
+  "ruleId": "house_rule_v0.1/operations-1",
+  "movementPoints": 3,
+  "roadCost": 1,
+  "offRoadCost": 2,
+  "riverCrossingCost": 1,
+  "blockedSquareIds": []
+}

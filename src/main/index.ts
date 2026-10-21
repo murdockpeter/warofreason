@@ -162,7 +162,7 @@ void app.whenReady().then(() => {
     return appInfoSchema.parse({
       version: app.getVersion(),
       platform: process.platform,
-      milestone: 'C',
+      milestone: 'F',
     });
   });
   ipcMain.handle(channels.confirm, async (event, input: unknown) => {

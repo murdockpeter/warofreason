@@ -1,5 +1,7 @@
 # The Road to Fontenoy, 1745 — module specification
 
+Current application increment: **0.6.0 / Milestone F**. The setup facts below remain unchanged. Optional [campaign aftermath](CAMPAIGN_AFTERMATH.md) adds separately reviewed regular-to-conscript rebuilding, configured recovery, commander records, manually entered Epic Points/exhaustion and confirmed siege/victory checkpoints. These remain campaign house rules. Opening force validation preserves original quality metadata; later briefs show current quality/readiness. No official tactical rules or card effects are automated. Earlier C–E descriptions below document the boundaries of those increments.
+
 Module `fontenoy` version **0.1.0**, provisional operational ruleset **house_rule_v0.1**. Implemented in application 0.3.0 (Milestone C). This is a reviewed setup workflow, not an operational or tactical engine.
 
 ## Evidence and provenance
@@ -29,7 +31,7 @@ Every unit records its faction UUID, contingent (`french`, `dutch`, `anglo_allie
 - Kilometres per square starts unspecified. Players can enter an approximate scale; it does not make the schematic a surveyed map and does not change movement costs.
 - No default roads/rivers or terrain classifications. Players may add/remove **proposed** roads between orthogonally adjacent cells. Edges store square IDs and house-rule provenance; no movement legality/cost is inferred.
 - Changing scale/adjacency preserves units, square IDs and assignments. Later verified geography must preserve/remap these references explicitly. The persisted map is separate from the module's original template.
-- Map and rosters are an **umpire/setup view**. Hidden-column flags are stored and displayed but do not create a player-specific fog-of-war mode; that is Milestone D.
+- Setup map and rosters are an **umpire view**. Campaign Map and Turn Orders now offer the Milestone D faction projections described below; concealed flags mask opposing columns in those views.
 
 ## Provisional opening setup
 
@@ -58,3 +60,17 @@ Armies/Columns provides **Edit setup**, per-unit friendly-column transfers, open
 Configured campaigns use aggregate schema **2** and JSON export format **2**. Historical schema-1 snapshots remain readable and unchanged inside mixed-version journals. Format-1 JSON imports remain supported. Exports use format 2; version mismatches are rejected. SQLite's table layout remains migration 001 because its versioned aggregate documents require no destructive table migration. No existing database is reset or silently re-seeded.
 
 Cloning remaps square/entity/objective UUIDs, siege targets and road/river references, preserves module data/settings, and resets lifecycle metadata to a draft with no current day. Export/import and restart retain the reviewed setup and source attribution.
+
+## Operational increment (Milestone D)
+
+Operational play is explicitly enabled after Start Campaign, retaining the same campaign identity and history. The optional aggregate-v2 extension stores versioned movement rules, phase, issued paths and engagement candidates. Defaults in `src/data/operations.v0.1.json` are provisional: 3 movement points per faction phase, road step 1, off-road step 2, configured river crossing +1; player-adjustable costs and blocked squares. Roads/river crossings must be configured independently of the decorative generated image.
+
+Both factions act sequentially before a day advance. Orders are saved before positions change; resolution is separately confirmed. Friendly stacking is allowed. Hostile destination contact stops the moving column before the occupied square, records deterministic candidates and holds participants for the tabletop workflow. Opposing columns already co-located in setup produce candidates when operational play is enabled. No battle, pursuit, siege or victory outcome is automated. At the configured deadline, the operational window ends without declaring a winner. See design decisions for the provisional rule rationale and tests.
+
+Campaign Map/Turn Orders offer a neutral umpire view and faction projections. Opposing composition/commanders/orders are redacted; hidden opposing columns are omitted. Faction exports exclude private snapshots/history and are not campaign backups. Full backup exports remain complete. Views are for a trusted shared local desktop, not authenticated player access.
+
+## Scouting and tabletop increment (Milestone E)
+
+`house_rule_v0.1/tabletop-1` adds umpire-adjudicated scouting, dated contact snapshots and configurable expiry/eligibility/ranges, plus candidate-based declarations and frozen shared battle briefs. An identified contact can release its observed roster/commanders; expired intelligence does not track current concealed forces. Opposing orders and raw private snapshots remain excluded from faction views/exports.
+
+The three-step declaration records participants, entry edges, manually agreed reinforcement instructions, objectives and terrain notes. No automatic conversion from decorative geography or interpretation of tactical cards occurs. Offline HTML and printable PDF briefs list original scenario-scale unit facts and players' notes. Manual decisive/marginal/draw results, per-unit observations and commander changes require confirmation and are preserved through restart/full export/import. No loss, recovery, quality, permanent disruption, siege or victory effect is applied until F. See [TABLETOP_WORKFLOW.md](TABLETOP_WORKFLOW.md).

@@ -8,6 +8,17 @@ import {
   renameCampaignSchema,
 } from '../shared/campaign-contracts';
 import type { LibraryResult } from '../shared/campaign-contracts';
+import type {
+  MovementOrder,
+  OperationalCommand,
+} from '../domain/operations-schema';
+import { routeCost } from '../domain/operations';
+import { operationalCommandSchema } from '../domain/operations-schema';
+import type { TabletopDraft } from './tabletop-draft';
+import { tabletopCommandSchema } from '../domain/tabletop-schema';
+import type { TabletopCommand } from '../domain/tabletop-schema';
+import { aftermathCommandSchema } from '../domain/aftermath-schema';
+import type { AftermathCommand } from '../domain/aftermath-schema';
 
 type DraftFields = { title: string; actor: string; reason: string };
 export type CampaignDraft = DraftFields & {
@@ -17,6 +28,17 @@ export type CampaignDraft = DraftFields & {
   history: DraftFields[];
 };
 interface CampaignSession {
+  commitAftermath(command: AftermathCommand): Promise<void>;
+  tabletopDraft: TabletopDraft | null;
+  beginTabletop(draft: TabletopDraft): Promise<void>;
+  editTabletop(draft: TabletopDraft): void;
+  saveTabletop(): Promise<void>;
+  commitTabletop(command: TabletopCommand): Promise<void>;
+  planningDraft: MovementOrder[] | null;
+  planningHistory: MovementOrder[][];
+  planOrder(order: MovementOrder | null, columnId: string): void;
+  undoOrder(): void;
+  operate(command: OperationalCommand): Promise<void>;
   setupDraft: FontenoyCampaign | null;
   setupHistory: FontenoyCampaign[];
   beginSetup(): Promise<void>;
@@ -45,11 +67,24 @@ interface CampaignSession {
 
 export const useCampaigns = create<CampaignSession>((set, get) => {
   async function allowDiscard(): Promise<boolean> {
-    if (!get().draft && !get().setupDraft) return true;
+    if (
+      !get().draft &&
+      !get().setupDraft &&
+      !get().planningDraft &&
+      !get().tabletopDraft
+    )
+      return true;
     set({ pending: true });
     try {
       if (!(await window.desktop.confirmDiscardDraft())) return false;
-      set({ draft: null, setupDraft: null, setupHistory: [] });
+      set({
+        draft: null,
+        setupDraft: null,
+        setupHistory: [],
+        planningDraft: null,
+        planningHistory: [],
+        tabletopDraft: null,
+      });
       return true;
     } finally {
       set({ pending: false });
@@ -67,7 +102,14 @@ export const useCampaigns = create<CampaignSession>((set, get) => {
         set({
           library: result.value,
           ...(clearDraft
-            ? { draft: null, setupDraft: null, setupHistory: [] }
+            ? {
+                draft: null,
+                setupDraft: null,
+                setupHistory: [],
+                planningDraft: null,
+                planningHistory: [],
+                tabletopDraft: null,
+              }
             : {}),
           message: 'Committed data is saved locally.',
         });
@@ -92,6 +134,210 @@ export const useCampaigns = create<CampaignSession>((set, get) => {
     }
   }
   return {
+    tabletopDraft: null,
+    async beginTabletop(draft) {
+      if (get().pending || get().loading) return;
+      try {
+        if (await allowDiscard())
+          set({
+            tabletopDraft: structuredClone(draft),
+            error: null,
+            message: null,
+          });
+      } catch {
+        set({ error: 'The editor could not open; saved state is unchanged.' });
+      }
+    },
+    editTabletop(draft) {
+      if (!get().pending)
+        set({ tabletopDraft: draft, error: null, message: null });
+    },
+    async saveTabletop() {
+      const draft = get().tabletopDraft;
+      if (!draft) return;
+      if (draft.kind === 'formation') {
+        const active = get().library?.active;
+        const parsed = operationalCommandSchema.safeParse(draft.command);
+        if (!active || get().pending || !parsed.success) {
+          set({
+            error: 'Name the new formation and move at least one unit into it.',
+          });
+          return;
+        }
+        await perform(() =>
+          window.desktop.commitOperationalAction({
+            id: active.id,
+            expectedRevision: active.revision,
+            actor: 'Local player',
+            reason:
+              'Split a formation at its existing position; no movement or unit state change.',
+            command: parsed.data,
+          }),
+        );
+        if (get().library?.active?.revision !== active.revision && !get().error)
+          set({ tabletopDraft: null });
+        return;
+      }
+      if (draft.kind === 'aftermath') {
+        const parsed = aftermathCommandSchema.safeParse(draft.command);
+        if (!parsed.success) {
+          set({
+            error: `Complete the required fields: ${parsed.error.issues
+              .slice(0, 3)
+              .map((i) => `${i.path.join('.')}: ${i.message}`)
+              .join(' ')}`.slice(0, 1900),
+          });
+          return;
+        }
+        await get().commitAftermath(parsed.data);
+        return;
+      }
+      const command =
+        draft.kind === 'scout'
+          ? { kind: 'scout', input: draft.input }
+          : draft.kind === 'declaration'
+            ? { kind: 'declare-battle', declaration: draft.declaration }
+            : draft.kind === 'result'
+              ? {
+                  kind: 'record-result',
+                  battleId: draft.battleId,
+                  result: draft.result,
+                }
+              : { kind: 'scouting-rules', rules: draft.rules };
+      const parsed = tabletopCommandSchema.safeParse(command);
+      if (!parsed.success) {
+        set({
+          error: `Complete the required fields: ${parsed.error.issues
+            .slice(0, 3)
+            .map((issue) => `${issue.path.join('.')}: ${issue.message}`)
+            .join(' ')}`.slice(0, 1900),
+        });
+        return;
+      }
+      await get().commitTabletop(parsed.data);
+    },
+    async commitTabletop(command) {
+      const active = get().library?.active;
+      if (!active || get().pending || get().loading) return;
+      if (
+        get().draft ||
+        get().setupDraft ||
+        get().planningDraft ||
+        (get().tabletopDraft && command.kind === 'start-battle')
+      ) {
+        set({ error: 'Save or discard your current draft first.' });
+        return;
+      }
+      await perform(() =>
+        window.desktop.commitTabletopAction({
+          id: active.id,
+          expectedRevision: active.revision,
+          actor: 'Local umpire',
+          reason: `Recorded ${command.kind} under player-reviewed tabletop procedures.`,
+          command,
+        }),
+      );
+      const saved = get().library?.active;
+      if (saved?.id === active.id && saved.revision !== active.revision)
+        set({ tabletopDraft: null });
+      else if (!get().error)
+        set({
+          message: 'No changes committed. Your draft is still available.',
+        });
+    },
+    async commitAftermath(command) {
+      const active = get().library?.active;
+      if (!active || get().pending || get().loading) return;
+      if (
+        get().draft ||
+        get().setupDraft ||
+        get().planningDraft ||
+        (get().tabletopDraft && get().tabletopDraft?.kind !== 'aftermath')
+      ) {
+        set({ error: 'Save or discard your current draft first.' });
+        return;
+      }
+      await perform(() =>
+        window.desktop.commitAftermathAction({
+          id: active.id,
+          expectedRevision: active.revision,
+          actor: 'Local umpire',
+          reason: `Reviewed campaign ${command.kind}.`,
+          command,
+        }),
+      );
+      const saved = get().library?.active;
+      if (saved?.id === active.id && saved.revision !== active.revision)
+        set({ tabletopDraft: null });
+      else if (!get().error)
+        set({
+          message: 'No changes committed. Your draft is still available.',
+        });
+    },
+    planningDraft: null,
+    planningHistory: [],
+    planOrder(order, columnId) {
+      const campaign = get().library?.active;
+      if (
+        campaign?.schemaVersion !== 2 ||
+        campaign.status !== 'active' ||
+        campaign.operations?.phase !== 'planning' ||
+        get().pending
+      )
+        return;
+      try {
+        if (order) routeCost(campaign, order);
+        const before = get().planningDraft ?? campaign.operations.orders;
+        const orders = before.filter((o) => o.columnId !== columnId);
+        if (order) orders.push(order);
+        set({
+          planningDraft: orders,
+          planningHistory: [...get().planningHistory.slice(-49), before],
+          error: null,
+          message: null,
+        });
+      } catch (error) {
+        set({
+          error: error instanceof Error ? error.message : 'Order rejected.',
+        });
+      }
+    },
+    undoOrder() {
+      if (get().pending) return;
+      const previous = get().planningHistory.at(-1);
+      if (previous)
+        set({
+          planningDraft: previous,
+          planningHistory: get().planningHistory.slice(0, -1),
+          error: null,
+        });
+    },
+    async operate(command) {
+      const active = get().library?.active;
+      if (!active || get().pending || get().loading) return;
+      if (
+        get().draft ||
+        get().setupDraft ||
+        get().tabletopDraft ||
+        (get().planningDraft && command.kind !== 'issue')
+      ) {
+        set({
+          error: 'Save or discard your current draft before this action.',
+        });
+        return;
+      }
+      await perform(
+        () =>
+          window.desktop.commitOperationalAction({
+            id: active.id,
+            expectedRevision: active.revision,
+            actor: 'Local player',
+            reason: `Operational ${command.kind}.`,
+            command,
+          }),
+        true,
+      );
+    },
     setupDraft: null,
     setupHistory: [],
     async beginSetup() {

@@ -58,12 +58,18 @@ export function readCampaignFile(filename: string): CampaignExport {
   return exportSchema.parse(data);
 }
 export function writeCampaignFile(filename: string, value: CampaignExport) {
+  writeJsonFile(filename, exportSchema.parse(value));
+}
+export function writeJsonFile(filename: string, value: unknown) {
   if (!filename.toLowerCase().endsWith('.json'))
     throw new CampaignError(
       'file',
       'Save the campaign with a .json extension.',
     );
-  const text = JSON.stringify(exportSchema.parse(value), null, 2) + '\n';
+  const text = JSON.stringify(value, null, 2) + '\n';
+  writeAtomicFile(filename, text);
+}
+export function writeAtomicFile(filename: string, text: string | Uint8Array) {
   if (Buffer.byteLength(text) > maxCampaignFileBytes)
     throw new CampaignError(
       'file',

@@ -2,6 +2,20 @@ import { _electron as electron } from '@playwright/test';
 import { mkdtempSync, rmSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import type { Page } from '@playwright/test';
+
+export async function navigateTo(page: Page, name: string) {
+  const button = page.getByRole('button', { name, exact: true });
+  if (!(await button.isVisible()))
+    await page.locator('.campaign-navigation > summary').click();
+  await button.click();
+}
+export async function selectMapView(page: Page, view: string) {
+  const select = page.getByRole('combobox', { name: 'Map view' });
+  if (!(await select.isVisible()))
+    await page.locator('.map-options > summary').click();
+  await select.selectOption(view);
+}
 
 export function testProfile() {
   return mkdtempSync(path.join(os.tmpdir(), 'maurice-electron-test-'));

@@ -1,5 +1,10 @@
 import { expect, test } from '@playwright/test';
-import { launchDesktop, removeTestProfile, testProfile } from './profile';
+import {
+  navigateTo,
+  launchDesktop,
+  removeTestProfile,
+  testProfile,
+} from './profile';
 test('development renderer starts with external network blocked', async () => {
   const profile = testProfile();
   const app = await launchDesktop(profile, false, true);
@@ -20,15 +25,30 @@ test('development renderer starts with external network blocked', async () => {
     await expect(
       page.getByRole('heading', { name: 'Dashboard', exact: true }),
     ).toBeVisible();
-    await expect(page.locator('.app-shell')).toHaveCSS('display', 'flex');
+    await expect(page.locator('.app-shell')).toHaveCSS('display', 'block');
     await expect(page.locator('.sidebar')).toHaveCSS(
       'background-color',
       'rgb(32, 61, 52)',
     );
     await expect(page.locator('.status-strip')).toHaveCSS('display', 'grid');
     await page.screenshot({ path: 'test-results/dev-dashboard.png' });
-    await page.getByRole('button', { name: 'Settings', exact: true }).click();
-    await expect(page.getByText('0.3.0', { exact: true })).toBeVisible();
+    await navigateTo(page, 'Campaign Map');
+    const backdrop = page.getByRole('img', {
+      name: /Age of Reason campaign backdrop/,
+    });
+    await expect(backdrop).toBeVisible();
+    await expect
+      .poll(() =>
+        backdrop.evaluate(
+          (element) =>
+            element instanceof HTMLImageElement &&
+            element.complete &&
+            element.naturalWidth > 0,
+        ),
+      )
+      .toBe(true);
+    await navigateTo(page, 'Settings');
+    await expect(page.getByText('0.6.0', { exact: true })).toBeVisible();
     expect(await page.evaluate(() => typeof window.desktop.getAppInfo)).toBe(
       'function',
     );

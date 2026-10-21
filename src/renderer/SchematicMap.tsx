@@ -1,5 +1,8 @@
 import type { FontenoyCampaign } from '../domain/campaign';
 import { squareLabel } from '../domain/setup-editing';
+import mapBackdrop from '../../assets/maps/age-of-reason-backdrop-concept-v1.png';
+import { ColumnMarker } from './ColumnMarker';
+import { markerTransform } from './map-markers';
 
 export function SchematicMap({ campaign }: { campaign: FontenoyCampaign }) {
   const squares = new Map(
@@ -15,8 +18,9 @@ export function SchematicMap({ campaign }: { campaign: FontenoyCampaign }) {
         <span className="badge">12 × 8 · not verified geography</span>
       </div>
       <p>
-        Original placeholder. Locations are approximate; no verified 1745 routes
-        or river geometry are claimed.{' '}
+        Generated Age of Reason artwork is decorative: illustrated towns, roads,
+        rivers and terrain do not define gameplay. Named locations and the grid
+        remain schematic, with unverified geography.{' '}
         {campaign.settings.map.kilometresPerSquare === null
           ? 'Scale unspecified.'
           : `Player-selected scale: approximately ${campaign.settings.map.kilometresPerSquare} km per square.`}{' '}
@@ -29,6 +33,13 @@ export function SchematicMap({ campaign }: { campaign: FontenoyCampaign }) {
           aria-label="Schematic 12-column by 8-row map with eight named locations"
         >
           <title>Schematic Fontenoy campaign map, umpire view</title>
+          <image
+            href={mapBackdrop}
+            width="1200"
+            height="800"
+            preserveAspectRatio="xMidYMid meet"
+            aria-hidden="true"
+          />
           {campaign.squares.map((square) => (
             <g key={square.id}>
               <rect
@@ -85,21 +96,22 @@ export function SchematicMap({ campaign }: { campaign: FontenoyCampaign }) {
             return (
               <g
                 key={column.id}
-                transform={`translate(${square.column * 100 + 20 + (offset % 3) * 29},${square.row * 100 + 69 + Math.floor(offset / 3) * 23})`}
+                transform={markerTransform(
+                  square,
+                  offset,
+                  campaign.columns.filter((c) => c.squareId === column.squareId)
+                    .length,
+                )}
               >
                 <title>
                   {column.displayName}: {column.unitIds.length} units;{' '}
                   {column.concealment}
                 </title>
-                <circle
-                  r="12"
-                  className={`map-column ${side === 'french' ? 'french' : 'allied'} ${column.concealment === 'hidden' ? 'concealed' : ''}`}
+                <ColumnMarker
+                  side={side === 'french' ? 'french' : 'allied'}
+                  concealed={column.concealment === 'hidden'}
+                  count={column.unitIds.length}
                 />
-                <text y="4" textAnchor="middle" className="map-count">
-                  {column.concealment === 'hidden'
-                    ? 'H'
-                    : column.unitIds.length}
-                </text>
               </g>
             );
           })}
@@ -107,8 +119,11 @@ export function SchematicMap({ campaign }: { campaign: FontenoyCampaign }) {
       </div>
       <p className="save-caption">
         Umpire/setup view: all assignments are visible here. Blue = French, red
-        = Allied; H = marked hidden. Player-specific fog of war is deferred to
-        Milestone D. Movement is not available yet.
+        = Allied; gold dashed border = marked hidden. Each silhouette represents
+        a column, with its unit count below. Player-specific fog of war is
+        available in the faction views on Campaign Map. Issue movement orders
+        from Campaign Map after starting the campaign and enabling operational
+        play.
       </p>
     </section>
   );

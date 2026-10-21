@@ -19,6 +19,9 @@ import {
   renameCampaignSchema,
   revisionRefSchema,
   setupCampaignSchema,
+  operationalInputSchema,
+  tabletopInputSchema,
+  aftermathInputSchema,
 } from '../../shared/campaign-contracts';
 import type {
   ArchiveCampaignInput,
@@ -26,12 +29,32 @@ import type {
   RenameCampaignInput,
   RevisionRef,
   SetupCampaignInput,
+  OperationalInput,
+  TabletopInput,
+  AftermathInput,
 } from '../../shared/campaign-contracts';
 import { seedFontenoy, setupIssues } from '../../domain/fontenoy';
 import { migrate } from './migrations';
 import { CampaignError } from './errors';
+import {
+  applyTabletopCommand,
+  tabletopCategories,
+} from '../../domain/tabletop';
+import type { TabletopReceipt } from '../../domain/tabletop-schema';
+import {
+  applyAftermathCommand,
+  aftermathCategories,
+} from '../../domain/aftermath';
+import type { AftermathReceipt } from '../../domain/aftermath-schema';
+import {
+  applyOperationalCommand,
+  operationalCategories,
+} from '../../domain/operations';
 
 export interface CampaignRepository {
+  aftermath(input: AftermathInput): CampaignLibrary;
+  tabletop(input: TabletopInput): CampaignLibrary;
+  operate(input: OperationalInput): CampaignLibrary;
   initializeScenario(input: ArchiveCampaignInput): CampaignLibrary;
   saveSetup(input: SetupCampaignInput): CampaignLibrary;
   start(input: ArchiveCampaignInput): CampaignLibrary;
@@ -67,6 +90,117 @@ export class SqliteCampaignRepository implements CampaignRepository {
   }
   close() {
     this.db.close();
+  }
+  aftermath(input: AftermathInput): CampaignLibrary {
+    const request = aftermathInputSchema.parse(input);
+    return this.transaction(() => {
+      const before = this.current(request);
+      if (before.schemaVersion !== 2)
+        throw new CampaignError('validation', 'Open a configured campaign.');
+      const stamp = this.next(before);
+      const receipt: AftermathReceipt = {
+        command: request.command,
+        recordId: randomUUID(),
+        timestamp: stamp.updatedAt,
+      };
+      let changed;
+      try {
+        changed = applyAftermathCommand(before, receipt);
+      } catch (error) {
+        throw new CampaignError(
+          'validation',
+          error instanceof Error ? error.message : 'Campaign action rejected.',
+        );
+      }
+      const after = campaignSchema.parse({
+        ...changed,
+        revision: stamp.revision,
+        updatedAt: stamp.updatedAt,
+      });
+      this.save(
+        before,
+        after,
+        aftermathCategories[request.command.kind],
+        request.actor,
+        `Rule: house_rule_v0.1/aftermath-1. ${request.reason}`.slice(0, 500),
+        null,
+        undefined,
+        receipt,
+      );
+      return this.librarySnapshot();
+    });
+  }
+  tabletop(input: TabletopInput): CampaignLibrary {
+    const request = tabletopInputSchema.parse(input);
+    return this.transaction(() => {
+      const before = this.current(request);
+      if (before.schemaVersion !== 2)
+        throw new CampaignError('validation', 'Open a configured campaign.');
+      const stamp = this.next(before);
+      const receipt: TabletopReceipt = {
+        command: request.command,
+        recordId: randomUUID(),
+        timestamp: stamp.updatedAt,
+      };
+      let changed;
+      try {
+        changed = applyTabletopCommand(before, receipt);
+      } catch (error) {
+        throw new CampaignError(
+          'validation',
+          error instanceof Error ? error.message : 'Tabletop action rejected.',
+        );
+      }
+      const after = campaignSchema.parse({
+        ...changed,
+        revision: stamp.revision,
+        updatedAt: stamp.updatedAt,
+      });
+      this.save(
+        before,
+        after,
+        tabletopCategories[request.command.kind],
+        request.actor,
+        `Rule: house_rule_v0.1/tabletop-1. ${request.reason}`.slice(0, 500),
+        null,
+        receipt,
+      );
+      return this.librarySnapshot();
+    });
+  }
+  operate(input: OperationalInput): CampaignLibrary {
+    const request = operationalInputSchema.parse(input);
+    return this.transaction(() => {
+      const before = this.current(request);
+      if (before.schemaVersion !== 2)
+        throw new CampaignError(
+          'validation',
+          'Load and start Fontenoy before issuing orders.',
+        );
+      let changed;
+      try {
+        changed = applyOperationalCommand(before, request.command);
+      } catch (error) {
+        throw new CampaignError(
+          'validation',
+          error instanceof Error
+            ? error.message
+            : 'Operational action rejected.',
+        );
+      }
+      const after = campaignSchema.parse(this.next(changed));
+      this.save(
+        before,
+        after,
+        operationalCategories[request.command.kind],
+        request.actor,
+        `Rule: ${changed.operations!.rules.ruleId}; ${changed.operations!.rules.movementPoints} MP, road ${changed.operations!.rules.roadCost}, off-road ${changed.operations!.rules.offRoadCost}, river +${changed.operations!.rules.riverCrossingCost}. ${request.reason}`.slice(
+          0,
+          500,
+        ),
+      );
+      return this.librarySnapshot();
+    });
   }
 
   private transaction<T>(work: () => T): T {
@@ -166,6 +300,8 @@ export class SqliteCampaignRepository implements CampaignRepository {
     actor: string,
     reason: string,
     sourceCampaignId: string | null = null,
+    tabletopAction?: TabletopReceipt,
+    aftermathAction?: AftermathReceipt,
   ) {
     campaignSchema.parse(after);
     const event = campaignEventSchema.parse({
@@ -179,6 +315,8 @@ export class SqliteCampaignRepository implements CampaignRepository {
       sourceCampaignId,
       before,
       after,
+      ...(tabletopAction ? { tabletopAction } : {}),
+      ...(aftermathAction ? { aftermathAction } : {}),
     });
     if (before) {
       const result = this.db
@@ -306,6 +444,15 @@ export class SqliteCampaignRepository implements CampaignRepository {
       const now = new Date().toISOString();
       const afterData = {
         ...source,
+        ...(source.schemaVersion === 2 && source.aftermath
+          ? { aftermath: undefined }
+          : {}),
+        ...(source.schemaVersion === 2 && source.tabletop
+          ? { tabletop: undefined }
+          : {}),
+        ...(source.schemaVersion === 2 && source.operations
+          ? { operations: undefined }
+          : {}),
         id: randomUUID(),
         title: request.title,
         status: 'draft',
@@ -317,13 +464,28 @@ export class SqliteCampaignRepository implements CampaignRepository {
         createdAt: now,
         updatedAt: now,
         factions: source.factions.map((f) => ({ ...f, id: remap(f.id) })),
-        units: source.units.map((u) => ({
-          ...u,
-          id: remap(u.id),
-          factionId: remap(u.factionId),
-        })),
+        units: source.units.map((u) => {
+          const copy = {
+            ...u,
+            id: remap(u.id),
+            factionId: remap(u.factionId),
+            currentStatus: 'ready' as const,
+          };
+          if ('initialQuality' in copy) {
+            if (
+              copy.initialQuality === 'elite' ||
+              copy.initialQuality === 'trained'
+            )
+              copy.quality = copy.initialQuality;
+            delete copy.initialQuality;
+          }
+          return copy;
+        }),
         commanders: source.commanders.map((c) => ({
           ...c,
+          ...('campaignStatus' in c
+            ? { campaignStatus: 'active' as const }
+            : {}),
           id: remap(c.id),
           factionId: remap(c.factionId),
         })),

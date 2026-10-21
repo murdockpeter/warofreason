@@ -5,7 +5,13 @@ import { reportError } from './diagnostics';
 import { CampaignDashboard } from './CampaignDashboard';
 import { useCampaigns } from './campaign-store';
 import { FontenoySetup } from './FontenoySetup';
-import { SchematicMap } from './SchematicMap';
+import { CampaignMap } from './CampaignMap';
+import { OperationalMap } from './OperationalMap';
+import { BattleLog } from './BattleLog';
+import { SiegeVictory } from './SiegeVictory';
+import { useOperationalSession } from './operational-session';
+import { SplitFormation } from './SplitFormation';
+import { HelpManual } from './HelpManual';
 
 const descriptions: Record<
   Screen,
@@ -14,8 +20,7 @@ const descriptions: Record<
   Dashboard: {
     lead: 'Your campaign, from march to tabletop.',
     empty: 'No campaign open',
-    detail:
-      'Create, manage and reopen saved campaign drafts. The Road to Fontenoy scenario follows in Milestone C.',
+    detail: 'Create, manage and reopen saved Fontenoy campaigns.',
     milestone: 'B · Campaign state',
   },
   'Campaign Map': {
@@ -23,7 +28,7 @@ const descriptions: Record<
     empty: 'No map loaded',
     detail:
       'A reviewed scenario module will supply the map. Movement and scouting await agreed, versioned campaign house rules.',
-    milestone: 'C–D · Map & operations',
+    milestone: 'D · Map & operations',
   },
   'Armies/Columns': {
     lead: 'Know the forces under your command.',
@@ -62,22 +67,45 @@ const descriptions: Record<
 };
 
 export function App() {
+  const { view, setView } = useOperationalSession();
   const { screen, navigate, notice, setNotice } = useSession();
   const [version, setVersion] = useState('Connecting…');
   const [pending, setPending] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
+  useEffect(() => {
+    const openHelp = (event: KeyboardEvent) => {
+      if (event.key === 'F1') {
+        event.preventDefault();
+        if (!document.querySelector('dialog[open]')) setHelpOpen(true);
+      }
+    };
+    window.addEventListener('keydown', openHelp);
+    return () => window.removeEventListener('keydown', openHelp);
+  }, []);
   const {
     library,
     draft,
     setupDraft,
+    planningDraft,
+    tabletopDraft,
     pending: campaignPending,
     initialize,
   } = useCampaigns();
   useEffect(() => {
-    void initialize();
+    void initialize().then(() => {
+      const active = useCampaigns.getState().library?.active;
+      if (
+        active?.status === 'active' &&
+        useSession.getState().screen === 'Dashboard'
+      )
+        useSession.getState().navigate('Campaign Map');
+    });
   }, [initialize]);
   useEffect(() => {
     const guard = (event: BeforeUnloadEvent) => {
       if (
+        useCampaigns.getState().planningDraft ||
+        useCampaigns.getState().tabletopDraft ||
         useCampaigns.getState().draft ||
         useCampaigns.getState().setupDraft ||
         useCampaigns.getState().pending
@@ -115,51 +143,71 @@ export function App() {
   const current = setupDraft ?? library?.active;
   const scenario = current?.schemaVersion === 2 ? current : null;
   return (
-    <div className="app-shell">
+    <div
+      className={`app-shell ${screen === 'Campaign Map' ? 'map-focused' : ''}`}
+    >
       <a className="skip-link" href="#main">
         Skip to content
       </a>
-      <aside className="sidebar">
-        <div className="brand">
-          <span className="brand-mark" aria-hidden="true">
-            M
-          </span>
-          <div>
-            <strong>MAURICE</strong>
-            <span>Campaign Companion</span>
+      <details className="campaign-navigation">
+        <summary>☰ Campaign menu</summary>
+        <aside className="sidebar">
+          <div className="brand">
+            <span className="brand-mark" aria-hidden="true">
+              M
+            </span>
+            <div>
+              <strong>MAURICE</strong>
+              <span>Campaign Companion</span>
+            </div>
           </div>
-        </div>
-        <div className="nav-label">CAMPAIGN DESK</div>
-        <nav aria-label="Main navigation">
-          {screens.map((item, index) => (
-            <button
-              key={item}
-              aria-current={screen === item ? 'page' : undefined}
-              onClick={() => navigate(item)}
-            >
-              <span className="nav-number" aria-hidden="true">
-                0{index + 1}
-              </span>
-              {item}
-            </button>
-          ))}
-        </nav>
-        <div className="sidebar-footer">
-          <span className="online-dot" /> Local desktop
-          <span>Fontenoy setup · Milestone C</span>
-        </div>
-      </aside>
+          <div className="nav-label">CAMPAIGN DESK</div>
+          <nav aria-label="Main navigation">
+            {screens
+              .filter((item) => item !== 'Campaign Map')
+              .map((item, index) => (
+                <button
+                  key={item}
+                  aria-current={screen === item ? 'page' : undefined}
+                  onClick={(e) => {
+                    navigate(item);
+                    const menu = e.currentTarget.closest('details');
+                    if (menu) menu.open = false;
+                  }}
+                >
+                  <span className="nav-number" aria-hidden="true">
+                    0{index + 1}
+                  </span>
+                  {item}
+                </button>
+              ))}
+          </nav>
+          <div className="sidebar-footer">
+            <span className="online-dot" /> Local desktop
+            <span>Campaign outcomes · Milestone F</span>
+          </div>
+        </aside>
+      </details>
       <div className="workspace">
         <header className="topbar">
+          <button
+            className="secondary"
+            aria-current={screen === 'Campaign Map' ? 'page' : undefined}
+            onClick={() => navigate('Campaign Map')}
+          >
+            Campaign Map
+          </button>
           <span>
             THE ROAD TO FONTENOY <span className="muted">/ 1745</span>
           </span>
           <span className="badge">
             {library?.active?.status === 'archived'
               ? 'Archived campaign'
-              : library?.active?.status === 'active'
-                ? 'Campaign started'
-                : 'Campaign setup'}
+              : scenario?.aftermath?.victory
+                ? 'Campaign concluded'
+                : library?.active?.status === 'active'
+                  ? 'Campaign started'
+                  : 'Campaign setup'}
           </span>
         </header>
         <section className="status-strip" aria-label="Campaign status">
@@ -173,22 +221,43 @@ export function App() {
             ['Active faction', scenario?.activeSide ?? 'Not assigned'],
             [
               'Siege status',
-              scenario
-                ? `${scenario.settings.siege.status.replaceAll('_', ' ')} · proposed`
-                : 'Not configured',
+              scenario?.aftermath
+                ? `${scenario.settings.siege.progress} / ${scenario.aftermath.rules.siegeThreshold} · ${scenario.aftermath.conditions.supplied ? 'supply verified' : 'supply unverified'}`
+                : scenario
+                  ? `${scenario.settings.siege.status.replaceAll('_', ' ')} · proposed`
+                  : 'Not configured',
             ],
-            ['Objectives', scenario ? '2 proposed goals' : 'Not configured'],
+            [
+              'Objectives',
+              scenario?.aftermath?.victory
+                ? `Outcome: ${scenario.aftermath.victory.winner}`
+                : scenario
+                  ? scenario.aftermath
+                    ? scenario.aftermath.conditions.relieved
+                      ? 'Relief verified'
+                      : scenario.aftermath.conditions.invested
+                        ? 'Tournai invested'
+                        : 'Investment unverified'
+                    : '2 proposed goals'
+                  : 'Not configured',
+            ],
             [
               'Unsaved changes',
               campaignPending
                 ? 'Operation pending'
-                : setupDraft
-                  ? 'Uncommitted setup'
-                  : draft
-                    ? 'Uncommitted draft'
-                    : library?.active
-                      ? 'All changes saved'
-                      : 'None · no active campaign',
+                : tabletopDraft
+                  ? tabletopDraft.kind === 'formation'
+                    ? 'Uncommitted formation split'
+                    : 'Uncommitted tabletop draft'
+                  : planningDraft
+                    ? 'Unissued orders'
+                    : setupDraft
+                      ? 'Uncommitted setup'
+                      : draft
+                        ? 'Uncommitted draft'
+                        : library?.active
+                          ? 'All changes saved'
+                          : 'None · no active campaign',
             ],
           ].map(([label, value]) => (
             <div key={label}>
@@ -217,31 +286,33 @@ export function App() {
             </div>
             <span className="milestone">{content.milestone}</span>
           </div>
-          {screen === 'Dashboard' ? (
+          {view !== 'umpire' &&
+          screen !== 'Campaign Map' &&
+          screen !== 'Turn Orders' &&
+          screen !== 'Settings' ? (
+            <section className="panel settings">
+              <h2>Shared campaign management</h2>
+              <p>
+                This screen includes both sides’ rosters or campaign records.
+                Switch to umpire view when both players are ready to share that
+                information.
+              </p>
+              <button onClick={() => setView('umpire')}>
+                Switch to umpire view
+              </button>
+            </section>
+          ) : screen === 'Dashboard' ? (
             <CampaignDashboard />
           ) : screen === 'Armies/Columns' ? (
             <FontenoySetup />
-          ) : screen === 'Campaign Map' && scenario ? (
-            <SchematicMap campaign={scenario} />
+          ) : screen === 'Campaign Map' ? (
+            <CampaignMap campaign={current ?? null} />
+          ) : screen === 'Turn Orders' && scenario ? (
+            <OperationalMap campaign={scenario} ordersOnly />
+          ) : screen === 'Battle Log' && scenario ? (
+            <BattleLog campaign={scenario} />
           ) : screen === 'Siege & Victory' && scenario ? (
-            <section className="panel settings">
-              <h2>Reviewed siege setup</h2>
-              <p>
-                Provisional siege state:{' '}
-                {scenario.settings.siege.status.replaceAll('_', ' ')}. Progress:{' '}
-                {scenario.settings.siege.progress}.
-              </p>
-              <ul>
-                {scenario.settings.objectives.map((objective) => (
-                  <li key={objective.id}>{objective.title} · house rule</li>
-                ))}
-              </ul>
-              <p>
-                No siege progression, threshold or victory evaluation is
-                implemented. Edit the initial setup in Armies/Columns before
-                starting.
-              </p>
-            </section>
+            <SiegeVictory campaign={scenario} />
           ) : screen === 'Settings' ? (
             <section className="panel settings">
               <h2>Application</h2>
@@ -287,24 +358,52 @@ export function App() {
               <p>{content.detail}</p>
             </section>
           )}
-          <section className="rules-note" aria-label="Rules boundary">
-            <span className="rule-mark" aria-hidden="true">
-              i
-            </span>
-            <div>
-              <h2>Campaign rules remain provisional</h2>
-              <p>
-                Operational movement, scouting, siege and victory proposals are
-                house rules, pending review. This build implements no campaign
-                mechanics and does not automate Maurice tactical play.
-              </p>
-            </div>
-          </section>
+          <details className="rules-help">
+            <summary>Rules & help</summary>
+            <section className="rules-note" aria-label="Rules boundary">
+              <span className="rule-mark" aria-hidden="true">
+                i
+              </span>
+              <div>
+                <h2>Campaign rules remain provisional</h2>
+                <p>
+                  Operational movement, scouting, siege and victory proposals
+                  are house rules, pending review. Operational movement uses the
+                  configured house rules; Maurice tactical play remains at the
+                  table.
+                </p>
+              </div>
+            </section>
+          </details>
           <footer className="page-footer">
             Built for the tabletop{' '}
-            <span>Milestone C · Fontenoy module & setup</span>
+            <span>Milestone F · Aftermath, siege & victory</span>
           </footer>
         </main>
+        <button
+          className="help-launcher"
+          aria-label="Help & player manual"
+          title="Help & player manual (F1)"
+          onClick={() => setHelpOpen(true)}
+        >
+          <span className="help-icon" aria-hidden="true">
+            i
+          </span>{' '}
+          Help
+        </button>
+        {helpOpen && (
+          <HelpManual
+            campaign={library?.active ?? null}
+            view={view}
+            screen={screen}
+            hasDraft={!!(draft || setupDraft || planningDraft || tabletopDraft)}
+            onNavigate={navigate}
+            onDismiss={() => setHelpOpen(false)}
+          />
+        )}
+        {scenario && (view === 'umpire' || view === scenario.activeSide) && (
+          <SplitFormation campaign={scenario} />
+        )}
       </div>
     </div>
   );

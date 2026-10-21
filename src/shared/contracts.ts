@@ -11,7 +11,7 @@ export const appInfoSchema = z
   .object({
     version: z.string().min(1),
     platform: z.enum(['win32', 'linux', 'darwin']),
-    milestone: z.literal('C'),
+    milestone: z.literal('F'),
   })
   .strict();
 export const diagnosticSchema = z

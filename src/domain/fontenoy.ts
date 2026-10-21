@@ -121,7 +121,7 @@ export function forceIssues(campaign: FontenoyCampaign): string[] {
       (u) =>
         u.contingent === group.contingent &&
         u.type === group.type &&
-        u.quality === group.quality,
+        (u.initialQuality ?? u.quality) === group.quality,
     ).length;
     if (actual !== group.count)
       issues.push(

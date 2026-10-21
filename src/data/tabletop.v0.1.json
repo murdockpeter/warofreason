@@ -1,0 +1,12 @@
+{
+  "ruleId": "house_rule_v0.1/tabletop-1",
+  "rangeSquares": 1,
+  "battleJoinRange": 1,
+  "expiresAfterTurns": 1,
+  "attemptsPerColumnPerTurn": 1,
+  "eligibleTypes": [
+    "regular_cavalry",
+    "irregular_cavalry",
+    "irregular_infantry"
+  ]
+}

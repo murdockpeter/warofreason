@@ -17,9 +17,52 @@ import {
   libraryResultSchema,
   fileResultSchema,
   setupCampaignSchema,
+  operationalInputSchema,
+  playerExportInputSchema,
+  tabletopInputSchema,
+  aftermathInputSchema,
+  battleDocumentInputSchema,
+  scoutRollSchema,
 } from '../shared/campaign-contracts';
 
 const api = Object.freeze<DesktopApi>({
+  commitAftermathAction: async (input) =>
+    libraryResultSchema.parse(
+      await ipcRenderer.invoke(
+        campaignChannels.aftermath,
+        aftermathInputSchema.parse(input),
+      ),
+    ),
+  commitTabletopAction: async (input) =>
+    libraryResultSchema.parse(
+      await ipcRenderer.invoke(
+        campaignChannels.tabletop,
+        tabletopInputSchema.parse(input),
+      ),
+    ),
+  rollScoutingDie: async () =>
+    scoutRollSchema.parse(await ipcRenderer.invoke(campaignChannels.scoutDie)),
+  exportBattleBrief: async (input) =>
+    fileResultSchema.parse(
+      await ipcRenderer.invoke(
+        campaignChannels.battleBrief,
+        battleDocumentInputSchema.parse(input),
+      ),
+    ),
+  commitOperationalAction: async (input) =>
+    libraryResultSchema.parse(
+      await ipcRenderer.invoke(
+        campaignChannels.operations,
+        operationalInputSchema.parse(input),
+      ),
+    ),
+  exportPlayerView: async (input) =>
+    fileResultSchema.parse(
+      await ipcRenderer.invoke(
+        campaignChannels.playerExport,
+        playerExportInputSchema.parse(input),
+      ),
+    ),
   initializeScenario: async (input) =>
     libraryResultSchema.parse(
       await ipcRenderer.invoke(

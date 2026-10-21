@@ -1,5 +1,6 @@
-import { dialog, ipcMain } from 'electron';
-import type { BrowserWindow, IpcMainInvokeEvent } from 'electron';
+import { BrowserWindow, dialog, ipcMain } from 'electron';
+import type { IpcMainInvokeEvent } from 'electron';
+import { randomInt, randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { noInput } from '../shared/contracts';
 import {
@@ -10,10 +11,24 @@ import {
   renameCampaignSchema,
   archiveCampaignSchema,
   setupCampaignSchema,
+  operationalInputSchema,
+  playerExportInputSchema,
+  tabletopInputSchema,
+  aftermathInputSchema,
+  battleDocumentInputSchema,
 } from '../shared/campaign-contracts';
 import { CampaignError, validationMessage } from './persistence/errors';
 import type { CampaignRepository } from './persistence/repository';
-import { readCampaignFile, writeCampaignFile } from './persistence/files';
+import {
+  readCampaignFile,
+  writeCampaignFile,
+  writeJsonFile,
+} from './persistence/files';
+import { projectOperationalView } from '../domain/operations';
+import { applyTabletopCommand } from '../domain/tabletop';
+import { applyAftermathCommand } from '../domain/aftermath';
+import { battleBriefHtml } from '../domain/battle-brief';
+import { writeAtomicFile } from './persistence/files';
 
 export function registerCampaignIpc(
   repository: CampaignRepository,
@@ -72,6 +87,211 @@ export function registerCampaignIpc(
     });
   }
   handle(campaignChannels.library, noInput, () => repository.library());
+  handle(campaignChannels.aftermath, aftermathInputSchema, async (input) => {
+    if (
+      ['apply-battle', 'finalize-turn', 'commander-status'].includes(
+        input.command.kind,
+      )
+    ) {
+      const campaign = repository.exportCampaign({
+        id: input.id,
+        expectedRevision: input.expectedRevision,
+      }).campaign;
+      if (campaign.schemaVersion !== 2)
+        throw new CampaignError('validation', 'Open a configured campaign.');
+      try {
+        applyAftermathCommand(campaign, {
+          command: input.command,
+          recordId: randomUUID(),
+          timestamp: new Date(
+            Math.max(Date.now(), Date.parse(campaign.updatedAt)),
+          ).toISOString(),
+        });
+      } catch (error) {
+        throw new CampaignError(
+          'validation',
+          error instanceof Error ? error.message : 'Invalid campaign action.',
+        );
+      }
+      const response = await dialog.showMessageBox(parent(), {
+        type: 'question',
+        title: 'Commit campaign changes?',
+        message:
+          input.command.kind === 'apply-battle'
+            ? 'Apply the reviewed post-battle campaign changes?'
+            : input.command.kind === 'finalize-turn'
+              ? 'Finalize this completed turn’s recovery, siege and victory checkpoint?'
+              : 'Record this commander status change?',
+        detail:
+          'These are explicit campaign house-rule changes. They are journaled with before/after state and cannot be silently undone. Tactical disruption and Army Morale are not carried into campaign exhaustion.',
+        buttons: ['Keep reviewing', 'Commit campaign changes'],
+        defaultId: 0,
+        cancelId: 0,
+        noLink: true,
+      });
+      if (response.response !== 1) return repository.library();
+    }
+    return repository.aftermath(input);
+  });
+  ipcMain.handle(campaignChannels.scoutDie, (event, input: unknown) => {
+    assertSender(event);
+    noInput.parse(input);
+    return randomInt(1, 7);
+  });
+  handle(campaignChannels.tabletop, tabletopInputSchema, async (input) => {
+    if (input.command.kind === 'record-result') {
+      const campaign = repository.exportCampaign({
+        id: input.id,
+        expectedRevision: input.expectedRevision,
+      }).campaign;
+      if (campaign.schemaVersion !== 2)
+        throw new CampaignError('validation', 'Open a configured campaign.');
+      try {
+        applyTabletopCommand(campaign, {
+          command: input.command,
+          recordId: randomUUID(),
+          timestamp: new Date(
+            Math.max(Date.now(), Date.parse(campaign.updatedAt)),
+          ).toISOString(),
+        });
+      } catch (error) {
+        throw new CampaignError(
+          'validation',
+          error instanceof Error ? error.message : 'Invalid result.',
+        );
+      }
+      const response = await dialog.showMessageBox(parent(), {
+        type: 'question',
+        title: 'Confirm tabletop result?',
+        message: 'Save this battle outcome and every unit/commander result?',
+        detail:
+          'This creates an immutable journal entry. No losses, quality changes, persistent disruption, siege progress or victory result will be applied. Post-battle campaign effects require separate review in Milestone F.',
+        buttons: ['Keep editing', 'Confirm battle result'],
+        defaultId: 0,
+        cancelId: 0,
+        noLink: true,
+      });
+      if (response.response !== 1) return repository.library();
+    }
+    return repository.tabletop(input);
+  });
+  handle(
+    campaignChannels.battleBrief,
+    battleDocumentInputSchema,
+    async (input) => {
+      const ref = { id: input.id, expectedRevision: input.expectedRevision };
+      const initial = repository.exportCampaign(ref).campaign;
+      if (
+        initial.schemaVersion !== 2 ||
+        !initial.tabletop?.battles.some((b) => b.id === input.battleId)
+      )
+        throw new CampaignError('validation', 'Choose a saved battle brief.');
+      const selected = await dialog.showSaveDialog(parent(), {
+        title: 'Save printable battle brief (both sides)',
+        defaultPath: `battle-${input.battleId}.${input.format}`,
+        filters: [
+          {
+            name: input.format === 'pdf' ? 'Printable PDF' : 'Offline HTML',
+            extensions: [input.format],
+          },
+        ],
+      });
+      if (selected.canceled || !selected.filePath) return { cancelled: true };
+      if (!selected.filePath.toLowerCase().endsWith(`.${input.format}`))
+        throw new CampaignError(
+          'file',
+          `Save the brief with a .${input.format} extension.`,
+        );
+      const current = repository.exportCampaign(ref).campaign;
+      if (current.schemaVersion !== 2)
+        throw new CampaignError(
+          'validation',
+          'Campaign changed; reload before exporting.',
+        );
+      const battle = current.tabletop!.battles.find(
+        (b) => b.id === input.battleId,
+      )!;
+      const html = battleBriefHtml(current, battle);
+      if (input.format === 'html') writeAtomicFile(selected.filePath, html);
+      else {
+        const printWindow = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            sandbox: true,
+            contextIsolation: true,
+            nodeIntegration: false,
+          },
+        });
+        printWindow.webContents.setWindowOpenHandler(() => ({
+          action: 'deny',
+        }));
+        try {
+          await printWindow.loadURL(
+            `data:text/html;charset=UTF-8,${encodeURIComponent(html)}`,
+          );
+          const pdf = await printWindow.webContents.printToPDF({
+            printBackground: true,
+            pageSize: 'A4',
+            preferCSSPageSize: true,
+          });
+          writeAtomicFile(selected.filePath, pdf);
+        } finally {
+          if (!printWindow.isDestroyed()) printWindow.destroy();
+        }
+      }
+      return { cancelled: false };
+    },
+  );
+  handle(campaignChannels.operations, operationalInputSchema, async (input) => {
+    if (input.command.kind === 'resolve') {
+      const campaign = repository.exportCampaign({
+        id: input.id,
+        expectedRevision: input.expectedRevision,
+      }).campaign;
+      if (campaign.schemaVersion !== 2)
+        throw new CampaignError('validation', 'Open a configured campaign.');
+      const response = await dialog.showMessageBox(parent(), {
+        type: 'question',
+        title: 'Commit operational resolution?',
+        message: `Resolve ${campaign.activeSide} orders for turn ${campaign.turn}?`,
+        detail:
+          'This commits movement, records engagement candidates and advances the faction or campaign day using your provisional house rules. Issued orders remain in the journal. Committed resolution cannot be undone.',
+        buttons: ['Keep reviewing', 'Resolve orders'],
+        defaultId: 0,
+        cancelId: 0,
+        noLink: true,
+      });
+      if (response.response !== 1) return repository.library();
+    }
+    return repository.operate(input);
+  });
+  handle(
+    campaignChannels.playerExport,
+    playerExportInputSchema,
+    async (input) => {
+      const ref = { id: input.id, expectedRevision: input.expectedRevision };
+      const campaign = repository.exportCampaign(ref).campaign;
+      if (campaign.schemaVersion !== 2)
+        throw new CampaignError('validation', 'Open a configured campaign.');
+      const selected = await dialog.showSaveDialog(parent(), {
+        title: 'Export faction view (not a campaign backup)',
+        defaultPath: `${input.view}-turn-${campaign.turn}.json`,
+        filters: [{ name: 'Faction view JSON', extensions: ['json'] }],
+      });
+      if (selected.canceled || !selected.filePath) return { cancelled: true };
+      const current = repository.exportCampaign(ref).campaign;
+      if (current.schemaVersion !== 2)
+        throw new CampaignError(
+          'validation',
+          'Campaign changed. Reload before exporting.',
+        );
+      writeJsonFile(
+        selected.filePath,
+        projectOperationalView(current, input.view),
+      );
+      return { cancelled: false };
+    },
+  );
   handle(campaignChannels.initialize, archiveCampaignSchema, (input) =>
     repository.initializeScenario(input),
   );
@@ -88,7 +308,7 @@ export function registerCampaignIpc(
       title: 'Start reviewed campaign?',
       message: `Start “${campaign.title}” with the saved setup?`,
       detail:
-        'The map and operational setup are provisional house rules. Starting records turn 1; movement, siege progression and tabletop resolution remain future milestones.',
+        'The map and operational setup are provisional house rules. Starting records turn 1. Operational play can then be enabled from Campaign Map; siege progression and tabletop resolution remain later milestones.',
       buttons: ['Keep reviewing', 'Start Campaign'],
       defaultId: 0,
       cancelId: 0,

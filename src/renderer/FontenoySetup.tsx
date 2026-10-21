@@ -77,6 +77,16 @@ function SetupEditor({ campaign }: { campaign: FontenoyCampaign }) {
     ...setupIssues(campaign),
   ];
   const status = campaign.status;
+  async function acknowledgeReview(
+    field: 'reviewedHouseRules' | 'reviewedSchematicMap',
+    value: boolean,
+  ) {
+    if (status !== 'draft' || state.pending || state.loading) return;
+    if (!editing) await state.beginSetup();
+    const editor = useCampaigns.getState();
+    if (editor.setupDraft?.id !== campaign.id) return;
+    editor.changeSetup({ kind: 'acknowledge', field, value });
+  }
   return (
     <div className="setup-layout">
       <section className="panel setup-intro" aria-label="Fontenoy setup review">
@@ -180,8 +190,8 @@ function SetupEditor({ campaign }: { campaign: FontenoyCampaign }) {
         )}
         {status === 'active' && (
           <p>
-            Campaign started at turn 1. Movement and turn resolution arrive in
-            Milestone D.
+            Campaign started. Use Campaign Map to enable operational play and
+            issue movement orders under your configured house rules.
           </p>
         )}
         {status === 'draft' && (
@@ -324,33 +334,30 @@ function SetupEditor({ campaign }: { campaign: FontenoyCampaign }) {
         <label className="check-label">
           <input
             type="checkbox"
-            disabled={disabled}
+            disabled={status !== 'draft' || state.pending || state.loading}
             checked={campaign.settings.reviewedHouseRules}
-            onChange={(e) =>
-              state.changeSetup({
-                kind: 'acknowledge',
-                field: 'reviewedHouseRules',
-                value: e.target.checked,
-              })
-            }
+            onChange={(e) => {
+              void acknowledgeReview('reviewedHouseRules', e.target.checked);
+            }}
           />
           I reviewed the provisional operational setup and schedule.
         </label>
         <label className="check-label">
           <input
             type="checkbox"
-            disabled={disabled}
+            disabled={status !== 'draft' || state.pending || state.loading}
             checked={campaign.settings.reviewedSchematicMap}
-            onChange={(e) =>
-              state.changeSetup({
-                kind: 'acknowledge',
-                field: 'reviewedSchematicMap',
-                value: e.target.checked,
-              })
-            }
+            onChange={(e) => {
+              void acknowledgeReview('reviewedSchematicMap', e.target.checked);
+            }}
           />
           I understand the map is schematic and routes are unverified.
         </label>
+        <p>
+          {status === 'draft'
+            ? 'Selecting a review confirmation opens an unsaved setup edit. Use Save setup at the top of this page before Start Campaign.'
+            : 'Review confirmations are read-only for started and archived campaigns. Clone the campaign from Dashboard to prepare a new draft.'}
+        </p>
       </section>
       <SchematicMap campaign={campaign} />
       <section className="panel settings" aria-label="Map configuration">
@@ -449,6 +456,50 @@ function SetupEditor({ campaign }: { campaign: FontenoyCampaign }) {
                 }
               >
                 Remove road
+              </button>
+            </li>
+          ))}
+        </ul>
+        <button
+          className="secondary"
+          disabled={
+            disabled ||
+            !roadFrom ||
+            !roadTo ||
+            campaign.settings.map.riverEdges.some(
+              (e) =>
+                [e.from, e.to].includes(roadFrom) &&
+                [e.from, e.to].includes(roadTo),
+            )
+          }
+          onClick={() =>
+            state.changeSetup({ kind: 'add-river', from: roadFrom, to: roadTo })
+          }
+        >
+          Add proposed river crossing
+        </button>
+        <p>
+          Use the same adjacent square selectors above for a player-defined
+          river crossing. This adds a movement surcharge, not verified river
+          geometry.
+        </p>
+        <ul>
+          {campaign.settings.map.riverEdges.map((edge) => (
+            <li key={`${edge.from}:${edge.to}`}>
+              {squareLabel(squares.find((s) => s.id === edge.from)!)} ↔{' '}
+              {squareLabel(squares.find((s) => s.id === edge.to)!)}{' '}
+              <button
+                className="secondary compact"
+                disabled={disabled}
+                onClick={() =>
+                  state.changeSetup({
+                    kind: 'remove-river',
+                    from: edge.from,
+                    to: edge.to,
+                  })
+                }
+              >
+                Remove river crossing
               </button>
             </li>
           ))}

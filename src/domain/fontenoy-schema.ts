@@ -66,10 +66,13 @@ export const fontenoyColumnSchema = columnSchema.extend({
   provenance: z.literal('house_rule_v0.1'),
 });
 export const fontenoyCommanderSchema = commanderSchema.extend({
+  campaignStatus: z.enum(['active', 'lost', 'retired']).optional(),
+  notableReference: z.string().max(4000).optional(),
   provenance: z.enum(['historical_scenario', 'house_rule_v0.1']),
   sourceRef: z.string().min(1).max(500),
 });
 export const fontenoyUnitSchema = unitSchema.safeExtend({
+  initialQuality: z.enum(['elite', 'trained']).optional(),
   contingent: z.enum(['french', 'dutch', 'anglo_allied']),
   sourceRef: z.string().min(1).max(500),
 });

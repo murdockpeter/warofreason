@@ -17,10 +17,13 @@ import {
   writeCampaignFile,
   maxCampaignFileBytes,
 } from '../../src/main/persistence/files';
-import { campaignSchema } from '../../src/domain/campaign';
+import { campaignSchema, exportSchema } from '../../src/domain/campaign';
 import { migrate } from '../../src/main/persistence/migrations';
 import type { FontenoyCampaign } from '../../src/domain/campaign';
 import { campaignFixture, exportFixture } from '../fixtures/campaign';
+import { completedResult, declarationFor } from '../fixtures/tabletop';
+import type { TabletopCommand } from '../../src/domain/tabletop-schema';
+import { aftermathDraft } from '../../src/domain/aftermath';
 
 let directory: string;
 let database: string;
@@ -46,6 +49,375 @@ function create(title = 'First campaign') {
   return repo.create({ title, ...audit }).active!;
 }
 describe('SQLite repository', () => {
+  it('commits aftermath, scheduled recovery and a supplied siege checkpoint with portable replay and a clean setup clone', () => {
+    const c = create() as FontenoyCampaign;
+    c.columns[3]!.squareId = c.squares.find(
+      (s) => s.row === 2 && s.column === 4,
+    )!.id;
+    c.settings.reviewedHouseRules = true;
+    c.settings.reviewedSchematicMap = true;
+    repo.saveSetup({
+      id: c.id,
+      expectedRevision: 1,
+      settings: c.settings,
+      columns: c.columns,
+      commanders: c.commanders,
+      ...audit,
+    });
+    repo.start({ id: c.id, expectedRevision: 2, ...audit });
+    const ref = () => ({
+      id: c.id,
+      expectedRevision: repo.library().active!.revision,
+    });
+    repo.operate({ ...ref(), ...audit, command: { kind: 'enable' } });
+    repo.operate({
+      ...ref(),
+      ...audit,
+      command: {
+        kind: 'issue',
+        orders: [
+          {
+            columnId: c.columns[0]!.id,
+            path: [c.columns[0]!.squareId!, c.columns[3]!.squareId!],
+          },
+        ],
+      },
+    });
+    repo.operate({ ...ref(), ...audit, command: { kind: 'resolve' } });
+    repo.tabletop({
+      ...ref(),
+      ...audit,
+      command: {
+        kind: 'declare-battle',
+        declaration: declarationFor(repo.library().active as FontenoyCampaign),
+      },
+    });
+    const battle = (repo.library().active as FontenoyCampaign).tabletop!
+      .battles[0]!;
+    repo.tabletop({
+      ...ref(),
+      ...audit,
+      command: { kind: 'start-battle', battleId: battle.id },
+    });
+    repo.tabletop({
+      ...ref(),
+      ...audit,
+      command: {
+        kind: 'record-result',
+        battleId: battle.id,
+        result: completedResult(battle),
+      },
+    });
+    repo.aftermath({ ...ref(), ...audit, command: { kind: 'enable' } });
+    const input = aftermathDraft(
+      repo.library().active as FontenoyCampaign,
+      (repo.library().active as FontenoyCampaign).tabletop!.battles[0]!,
+    );
+    input.notes = 'Reviewed post-battle changes.';
+    input.epicPoints.french = 3;
+    const before = repo.library();
+    expect(() =>
+      repo.aftermath({
+        ...ref(),
+        ...audit,
+        command: { kind: 'apply-battle', input: { ...input, broken: [] } },
+      }),
+    ).toThrow('broken unit');
+    expect(repo.library()).toEqual(before);
+    repo.aftermath({
+      ...ref(),
+      ...audit,
+      command: { kind: 'apply-battle', input },
+    });
+    const applied = repo.library();
+    restart();
+    expect(repo.library()).toEqual(applied);
+    expect(() =>
+      repo.aftermath({
+        ...ref(),
+        ...audit,
+        command: { kind: 'apply-battle', input },
+      }),
+    ).toThrow('already');
+    expect(repo.library()).toEqual(applied);
+    repo.aftermath({
+      ...ref(),
+      ...audit,
+      command: {
+        kind: 'siege-conditions',
+        conditions: { invested: true, supplied: true, relieved: false },
+        notes: 'Umpire verified operational supply.',
+      },
+    });
+    repo.operate({
+      ...ref(),
+      ...audit,
+      command: { kind: 'issue', orders: [] },
+    });
+    repo.operate({ ...ref(), ...audit, command: { kind: 'resolve' } });
+    repo.aftermath({ ...ref(), ...audit, command: { kind: 'finalize-turn' } });
+    const finalized = repo.library();
+    const current = finalized.active as FontenoyCampaign;
+    expect(current.units[0]!.quality).toBe('conscript');
+    expect(current.units[0]!.currentStatus).toBe('ready');
+    expect(current.settings.siege.progress).toBe(1);
+    const portable = repo.exportCampaign(ref());
+    const destination = new SqliteCampaignRepository(':memory:');
+    try {
+      const imported = destination.importCampaign(portable);
+      expect((imported.active as FontenoyCampaign).aftermath).toEqual(
+        current.aftermath,
+      );
+      const clone = destination.clone({
+        id: c.id,
+        expectedRevision: imported.active!.revision,
+        title: 'Aftermath setup clone',
+        ...audit,
+      }).active as FontenoyCampaign;
+      expect(clone.aftermath).toBeUndefined();
+      expect(clone.units.every((u) => u.currentStatus === 'ready')).toBe(true);
+      expect(clone.units[0]!.quality).toBe('elite');
+      expect(clone.units[0]!.initialQuality).toBeUndefined();
+    } finally {
+      destination.close();
+    }
+    if (portable.formatVersion !== 2) throw new Error('Expected format 2.');
+    const forged = structuredClone(portable);
+    forged.events.at(-1)!.aftermathAction!.command = {
+      kind: 'exhaustion',
+      values: { french: 10, allied: 10 },
+      notes: 'Tampered action.',
+    };
+    expect(exportSchema.safeParse(forged).success).toBe(false);
+    restart();
+    expect(repo.library()).toEqual(finalized);
+  });
+  it('persists scouting, frozen battle briefs and confirmed results with replayable audit receipts and safe round trips', () => {
+    const c = create() as FontenoyCampaign;
+    c.columns[1]!.squareId = c.columns[0]!.squareId;
+    c.columns[3]!.squareId = c.squares.find(
+      (s) => s.row === 2 && s.column === 4,
+    )!.id;
+    c.columns[3]!.concealment = 'hidden';
+    c.settings.reviewedHouseRules = true;
+    c.settings.reviewedSchematicMap = true;
+    repo.saveSetup({
+      id: c.id,
+      expectedRevision: 1,
+      settings: c.settings,
+      columns: c.columns,
+      commanders: c.commanders,
+      ...audit,
+    });
+    repo.start({ id: c.id, expectedRevision: 2, ...audit });
+    const ref = () => ({
+      id: c.id,
+      expectedRevision: repo.library().active!.revision,
+      ...audit,
+    });
+    const action = (command: TabletopCommand) =>
+      repo.tabletop({ ...ref(), command });
+    repo.operate({ ...ref(), command: { kind: 'enable' } });
+    const scout = {
+      kind: 'scout' as const,
+      input: {
+        scoutId: c.columns[1]!.id,
+        targetColumnId: c.columns[3]!.id,
+        roll: 4,
+        rollSource: 'physical' as const,
+        modifier: 0,
+        reason: 'Umpire decision.',
+        state: 'located' as const,
+        estimate: '',
+      },
+    };
+    action(scout);
+    const before = repo.library();
+    expect(() => action(scout)).toThrow('attempts');
+    expect(repo.library()).toEqual(before);
+    repo.operate({
+      ...ref(),
+      command: {
+        kind: 'issue',
+        orders: [
+          {
+            columnId: c.columns[0]!.id,
+            path: [c.columns[0]!.squareId!, c.columns[3]!.squareId!],
+          },
+        ],
+      },
+    });
+    repo.operate({ ...ref(), command: { kind: 'resolve' } });
+    action({
+      kind: 'declare-battle',
+      declaration: declarationFor(repo.library().active as FontenoyCampaign),
+    });
+    const declared = repo.library();
+    restart();
+    expect(repo.library()).toEqual(declared);
+    const battle = (declared.active as FontenoyCampaign).tabletop!.battles[0]!;
+    action({ kind: 'start-battle', battleId: battle.id });
+    const result = completedResult(battle);
+    const inProgress = repo.library();
+    expect(() =>
+      action({
+        kind: 'record-result',
+        battleId: battle.id,
+        result: { ...result, units: result.units.slice(1) },
+      }),
+    ).toThrow('every committed unit');
+    expect(repo.library()).toEqual(inProgress);
+    action({ kind: 'record-result', battleId: battle.id, result });
+    const confirmed = repo.library();
+    expect(confirmed.active!.units).toEqual(c.units);
+    expect(confirmed.events.at(-1)!.tabletopAction?.command.kind).toBe(
+      'record-result',
+    );
+    const stale = { ...ref(), expectedRevision: ref().expectedRevision - 1 };
+    expect(() =>
+      repo.tabletop({
+        ...stale,
+        command: { kind: 'record-result', battleId: battle.id, result },
+      }),
+    ).toThrow('changed');
+    restart();
+    expect(repo.library()).toEqual(confirmed);
+    const exported = repo.exportCampaign({
+      id: c.id,
+      expectedRevision: ref().expectedRevision,
+    });
+    const destination = new SqliteCampaignRepository(':memory:');
+    try {
+      const imported = destination.importCampaign(exported);
+      expect((imported.active as FontenoyCampaign).tabletop).toEqual(
+        (confirmed.active as FontenoyCampaign).tabletop,
+      );
+      const clone = destination.clone({
+        id: c.id,
+        expectedRevision: imported.active!.revision,
+        title: 'Tabletop clone',
+        ...audit,
+      });
+      expect((clone.active as FontenoyCampaign).tabletop).toBeUndefined();
+      expect((clone.active as FontenoyCampaign).operations).toBeUndefined();
+    } finally {
+      destination.close();
+    }
+    const forged = structuredClone(exported);
+    if (forged.formatVersion !== 2) throw new Error('Expected current export.');
+    const receipt = forged.events.at(-1)!.tabletopAction!;
+    if (receipt.command.kind === 'record-result')
+      receipt.command.result.outcome = 'french_decisive';
+    expect(exportSchema.safeParse(forged).success).toBe(false);
+  });
+  it('rejects relabelled legacy journal events as operational actions', () => {
+    const imported = repo.importCampaign(exportFixture());
+    const portable = repo.exportCampaign({
+      id: imported.active!.id,
+      expectedRevision: imported.active!.revision,
+    });
+    portable.events.at(-1)!.category = 'operations_enabled';
+    expect(exportSchema.safeParse(portable).success).toBe(false);
+  });
+  it('atomically issues and resolves operational orders with restart, stale revision rejection, journal validation and portable round trip', () => {
+    const campaign = create() as FontenoyCampaign;
+    repo.saveSetup({
+      id: campaign.id,
+      expectedRevision: campaign.revision,
+      ...audit,
+      settings: {
+        ...campaign.settings,
+        reviewedHouseRules: true,
+        reviewedSchematicMap: true,
+      },
+      columns: campaign.columns,
+      commanders: campaign.commanders,
+    });
+    repo.start({ id: campaign.id, expectedRevision: 2, ...audit });
+    repo.operate({
+      id: campaign.id,
+      expectedRevision: 3,
+      ...audit,
+      command: { kind: 'enable' },
+    });
+    const current = repo.library().active as FontenoyCampaign;
+    const order = {
+      columnId: current.columns[0]!.id,
+      path: [
+        current.columns[0]!.squareId!,
+        current.squares.find((s) => s.row === 2 && s.column === 4)!.id,
+      ],
+    };
+    const before = repo.library();
+    expect(() =>
+      repo.operate({
+        id: campaign.id,
+        expectedRevision: 4,
+        ...audit,
+        command: {
+          kind: 'issue',
+          orders: [
+            { ...order, path: [order.path[0]!, current.squares[0]!.id] },
+          ],
+        },
+      }),
+    ).toThrow('adjacent');
+    expect(repo.library()).toEqual(before);
+    repo.operate({
+      id: campaign.id,
+      expectedRevision: 4,
+      ...audit,
+      command: { kind: 'issue', orders: [order] },
+    });
+    restart();
+    const issued = repo.library();
+    expect((issued.active as FontenoyCampaign).operations!.orders).toEqual([
+      order,
+    ]);
+    expect(issued.active!.columns).toEqual(current.columns);
+    expect(() =>
+      repo.operate({
+        id: campaign.id,
+        expectedRevision: 4,
+        ...audit,
+        command: { kind: 'resolve' },
+      }),
+    ).toThrow('changed');
+    expect(repo.library()).toEqual(issued);
+    const resolved = repo.operate({
+      id: campaign.id,
+      expectedRevision: 5,
+      ...audit,
+      command: { kind: 'resolve' },
+    });
+    expect(resolved.active!.columns[0]!.squareId).toBe(order.path[1]);
+    expect(resolved.events.at(-1)!.reason).toContain(
+      'house_rule_v0.1/operations-1',
+    );
+    const portable = repo.exportCampaign({
+      id: campaign.id,
+      expectedRevision: 6,
+    });
+    const destination = new SqliteCampaignRepository(':memory:');
+    try {
+      expect(destination.importCampaign(portable).active!.columns).toEqual(
+        resolved.active!.columns,
+      );
+      const cloned = destination.clone({
+        id: campaign.id,
+        expectedRevision: 7,
+        title: 'Operational fork',
+        ...audit,
+      });
+      expect((cloned.active as FontenoyCampaign).operations).toBeUndefined();
+      expect(cloned.active!.turn).toBe(0);
+    } finally {
+      destination.close();
+    }
+    const forged = structuredClone(portable);
+    forged.events.at(-1)!.after.columns[0]!.squareId = current.squares[0]!.id;
+    expect(exportSchema.safeParse(forged).success).toBe(false);
+  });
   it('upgrades a legacy empty draft explicitly without replacing identity or old journal snapshots', () => {
     const legacy = campaignFixture();
     legacy.factions = [];

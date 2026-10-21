@@ -1,5 +1,10 @@
 import { expect, test } from '@playwright/test';
-import { launchDesktop, removeTestProfile, testProfile } from './profile';
+import {
+  navigateTo,
+  launchDesktop,
+  removeTestProfile,
+  testProfile,
+} from './profile';
 
 for (const packaged of [false, true]) {
   test(`${packaged ? 'packaged Windows' : 'production build'} opens offline with isolated renderer`, async () => {
@@ -22,7 +27,7 @@ for (const packaged of [false, true]) {
       await expect(
         page.getByRole('heading', { name: 'Dashboard', exact: true }),
       ).toBeVisible();
-      await expect(page.locator('.app-shell')).toHaveCSS('display', 'flex');
+      await expect(page.locator('.app-shell')).toHaveCSS('display', 'block');
       await expect(page.locator('.sidebar')).toHaveCSS(
         'background-color',
         'rgb(32, 61, 52)',
@@ -36,12 +41,35 @@ for (const packaged of [false, true]) {
         'Siege & Victory',
         'Settings',
       ]) {
-        await page.getByRole('button', { name, exact: true }).click();
+        await navigateTo(page, name);
         await expect(
-          page.getByRole('heading', { level: 1, name, exact: true }),
+          name === 'Campaign Map'
+            ? page.getByRole('button', { name, exact: true })
+            : page.getByRole('heading', { level: 1, name, exact: true }),
         ).toBeVisible();
+        if (name === 'Campaign Map') {
+          const backdrop = page.getByRole('img', {
+            name: /Age of Reason campaign backdrop/,
+          });
+          await expect(backdrop).toBeVisible();
+          await expect
+            .poll(() =>
+              backdrop.evaluate(
+                (element) =>
+                  element instanceof HTMLImageElement &&
+                  element.complete &&
+                  element.naturalWidth > 0,
+              ),
+            )
+            .toBe(true);
+          await page
+            .getByRole('region', { name: 'Campaign map preview' })
+            .screenshot({
+              path: `test-results/${packaged ? 'packaged' : 'built'}-map-preview.png`,
+            });
+        }
       }
-      await expect(page.getByText('0.3.0', { exact: true })).toBeVisible();
+      await expect(page.getByText('0.6.0', { exact: true })).toBeVisible();
       expect(
         await app.evaluate(({ app }) => Reflect.get(app, 'smokeLoadErrors')),
       ).toEqual([]);
@@ -105,6 +133,12 @@ for (const packaged of [false, true]) {
           'initializeScenario',
           'saveCampaignSetup',
           'startCampaign',
+          'commitOperationalAction',
+          'exportPlayerView',
+          'commitTabletopAction',
+          'commitAftermathAction',
+          'rollScoutingDie',
+          'exportBattleBrief',
         ].sort(),
       });
       const cdp = await page.context().newCDPSession(page);

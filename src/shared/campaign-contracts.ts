@@ -1,5 +1,11 @@
 import { z } from 'zod';
+import { tabletopCommandSchema } from '../domain/tabletop-schema';
+import { aftermathCommandSchema } from '../domain/aftermath-schema';
 import { idSchema, librarySchema, titleSchema } from '../domain/campaign';
+import {
+  operationalCommandSchema,
+  mapViewSchema,
+} from '../domain/operations-schema';
 import {
   fontenoySettingsSchema,
   fontenoyColumnSchema,
@@ -22,6 +28,27 @@ export const renameCampaignSchema = revisionRefSchema.extend({
   ...audit,
 });
 export const archiveCampaignSchema = revisionRefSchema.extend(audit);
+export const operationalInputSchema = archiveCampaignSchema.extend({
+  command: operationalCommandSchema,
+});
+export const tabletopInputSchema = archiveCampaignSchema.extend({
+  command: tabletopCommandSchema,
+});
+export type TabletopInput = z.infer<typeof tabletopInputSchema>;
+export const aftermathInputSchema = archiveCampaignSchema.extend({
+  command: aftermathCommandSchema,
+});
+export type AftermathInput = z.infer<typeof aftermathInputSchema>;
+export const battleDocumentInputSchema = revisionRefSchema.extend({
+  battleId: idSchema,
+  format: z.enum(['html', 'pdf']),
+});
+export type BattleDocumentInput = z.infer<typeof battleDocumentInputSchema>;
+export const scoutRollSchema = z.number().int().min(1).max(6);
+export type OperationalInput = z.infer<typeof operationalInputSchema>;
+export const playerExportInputSchema = revisionRefSchema.extend({
+  view: mapViewSchema.exclude(['umpire']),
+});
 export const setupCampaignSchema = archiveCampaignSchema.extend({
   settings: fontenoySettingsSchema,
   columns: z.array(fontenoyColumnSchema).max(1000),
@@ -51,6 +78,14 @@ export const fileResultSchema = resultSchema(
 export type LibraryResult = z.infer<typeof libraryResultSchema>;
 export type FileResult = z.infer<typeof fileResultSchema>;
 export interface CampaignApi {
+  commitAftermathAction(input: AftermathInput): Promise<LibraryResult>;
+  commitTabletopAction(input: TabletopInput): Promise<LibraryResult>;
+  rollScoutingDie(): Promise<number>;
+  exportBattleBrief(input: BattleDocumentInput): Promise<FileResult>;
+  commitOperationalAction(input: OperationalInput): Promise<LibraryResult>;
+  exportPlayerView(
+    input: z.infer<typeof playerExportInputSchema>,
+  ): Promise<FileResult>;
   initializeScenario(input: ArchiveCampaignInput): Promise<LibraryResult>;
   saveCampaignSetup(input: SetupCampaignInput): Promise<LibraryResult>;
   startCampaign(input: ArchiveCampaignInput): Promise<LibraryResult>;
@@ -67,6 +102,12 @@ export interface CampaignApi {
   confirmDiscardDraft(): Promise<boolean>;
 }
 export const campaignChannels = {
+  aftermath: 'campaign:aftermath-action',
+  tabletop: 'campaign:tabletop-action',
+  scoutDie: 'campaign:scout-die',
+  battleBrief: 'campaign:export-battle-brief',
+  operations: 'campaign:operational-action',
+  playerExport: 'campaign:export-player-view',
   initialize: 'campaign:initialize-fontenoy',
   setup: 'campaign:save-setup',
   start: 'campaign:start',

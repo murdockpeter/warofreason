@@ -2,7 +2,12 @@ import { expect, test } from '@playwright/test';
 import type { ElectronApplication, Page } from '@playwright/test';
 import { readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
-import { launchDesktop, removeTestProfile, testProfile } from './profile';
+import {
+  navigateTo,
+  launchDesktop,
+  removeTestProfile,
+  testProfile,
+} from './profile';
 
 async function library(page: Page) {
   const result = await page.evaluate(() => window.desktop.getCampaignLibrary());
@@ -57,15 +62,11 @@ for (const packaged of [false, true]) {
       await page
         .getByRole('textbox', { name: 'Campaign title' })
         .fill('Persisted campaign');
-      await page
-        .getByRole('button', { name: 'Campaign Map', exact: true })
-        .click();
+      await navigateTo(page, 'Campaign Map');
       await expect(
         page.getByRole('region', { name: 'Campaign status' }),
       ).toContainText('Uncommitted draft');
-      await page
-        .getByRole('button', { name: 'Dashboard', exact: true })
-        .click();
+      await navigateTo(page, 'Dashboard');
       await expect(
         page.getByRole('textbox', { name: 'Campaign title' }),
       ).toHaveValue('Persisted campaign');
