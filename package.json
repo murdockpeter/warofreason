@@ -1,0 +1,81 @@
+{
+  "name": "maurice-campaign-companion",
+  "version": "0.3.0",
+  "description": "Local-first Maurice campaign companion - Fontenoy setup",
+  "main": "dist/main/index.cjs",
+  "scripts": {
+    "postinstall": "node node_modules/electron/install.js",
+    "dev": "node scripts/dev.mjs",
+    "build": "node scripts/build-electron.mjs && vite build",
+    "typecheck": "tsc -p tsconfig.node.json && tsc -p tsconfig.renderer.json",
+    "lint": "eslint .",
+    "format:check": "prettier --check .",
+    "format": "prettier --write .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "test:dev": "playwright test --config playwright.dev.config.ts",
+    "package": "npm run build && electron-builder --win --dir",
+    "package:installer": "npm run build && electron-builder --win nsis"
+  },
+  "keywords": [],
+  "author": "Peter G. Robbins",
+  "license": "UNLICENSED",
+  "type": "module",
+  "dependencies": {
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "zod": "4.6.7",
+    "zustand": "5.0.15"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@playwright/test": "1.64.1",
+    "@testing-library/jest-dom": "7.0.1",
+    "@testing-library/react": "16.3.3",
+    "@testing-library/user-event": "14.6.8",
+    "@types/node": "26.6.5",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.1.2",
+    "electron": "45.0.0",
+    "electron-builder": "26.15.3",
+    "esbuild": "0.28.2",
+    "eslint": "10.13.0",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "eslint-plugin-react-refresh": "0.5.7",
+    "jsdom": "29.1.1",
+    "prettier": "3.9.10",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.72.0",
+    "vite": "8.3.5",
+    "vitest": "5.0.5"
+  },
+  "private": true,
+  "engines": {
+    "node": ">=24.7.0"
+  },
+  "build": {
+    "appId": "com.mauricecampaign.companion",
+    "productName": "Maurice Campaign Companion",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "package.json",
+      "LICENSE"
+    ],
+    "asar": true,
+    "npmRebuild": false,
+    "win": {
+      "target": "nsis",
+      "signAndEditExecutable": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    },
+    "publish": null
+  }
+}

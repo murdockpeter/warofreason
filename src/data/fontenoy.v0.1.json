@@ -1,0 +1,198 @@
+{
+  "id": "fontenoy",
+  "version": "0.1.0",
+  "rulesetVersion": "house_rule_v0.1",
+  "title": "The Road to Fontenoy, 1745",
+  "historicalBackground": "The battle at Fontenoy on 11 May 1745 was connected to the French siege of Tournai. French and Allied commanders sought to protect or relieve the siege.",
+  "historySource": "Royal Collection Trust, RCIN 729096; Maurice, chapter 11, pp. 94–95.",
+  "map": {
+    "columns": 12,
+    "rows": 8,
+    "kilometresPerSquare": null,
+    "roadEdges": [],
+    "riverEdges": []
+  },
+  "locations": [
+    { "name": "Lille", "row": 2, "column": 0 },
+    { "name": "Tournai", "row": 2, "column": 3 },
+    { "name": "Fontenoy", "row": 3, "column": 4 },
+    { "name": "Antoing", "row": 4, "column": 3 },
+    { "name": "Leuze", "row": 1, "column": 6 },
+    { "name": "Ath", "row": 1, "column": 8 },
+    { "name": "Soignies", "row": 3, "column": 11 },
+    { "name": "Valenciennes", "row": 7, "column": 4 }
+  ],
+  "unitGroups": [
+    {
+      "side": "french",
+      "contingent": "french",
+      "type": "regular_infantry",
+      "quality": "elite",
+      "count": 3
+    },
+    {
+      "side": "french",
+      "contingent": "french",
+      "type": "regular_infantry",
+      "quality": "trained",
+      "count": 8
+    },
+    {
+      "side": "french",
+      "contingent": "french",
+      "type": "regular_cavalry",
+      "quality": "elite",
+      "count": 2
+    },
+    {
+      "side": "french",
+      "contingent": "french",
+      "type": "regular_cavalry",
+      "quality": "trained",
+      "count": 4
+    },
+    {
+      "side": "french",
+      "contingent": "french",
+      "type": "artillery",
+      "quality": null,
+      "count": 3
+    },
+    {
+      "side": "allied",
+      "contingent": "dutch",
+      "type": "regular_infantry",
+      "quality": "elite",
+      "count": 1
+    },
+    {
+      "side": "allied",
+      "contingent": "dutch",
+      "type": "regular_infantry",
+      "quality": "trained",
+      "count": 3
+    },
+    {
+      "side": "allied",
+      "contingent": "dutch",
+      "type": "regular_cavalry",
+      "quality": "elite",
+      "count": 1
+    },
+    {
+      "side": "allied",
+      "contingent": "dutch",
+      "type": "regular_cavalry",
+      "quality": "trained",
+      "count": 1
+    },
+    {
+      "side": "allied",
+      "contingent": "dutch",
+      "type": "artillery",
+      "quality": null,
+      "count": 1
+    },
+    {
+      "side": "allied",
+      "contingent": "anglo_allied",
+      "type": "regular_infantry",
+      "quality": "elite",
+      "count": 1
+    },
+    {
+      "side": "allied",
+      "contingent": "anglo_allied",
+      "type": "regular_infantry",
+      "quality": "trained",
+      "count": 6
+    },
+    {
+      "side": "allied",
+      "contingent": "anglo_allied",
+      "type": "regular_cavalry",
+      "quality": "elite",
+      "count": 1
+    },
+    {
+      "side": "allied",
+      "contingent": "anglo_allied",
+      "type": "regular_cavalry",
+      "quality": "trained",
+      "count": 1
+    },
+    {
+      "side": "allied",
+      "contingent": "anglo_allied",
+      "type": "artillery",
+      "quality": null,
+      "count": 2
+    }
+  ],
+  "unitSource": "Maurice, chapter 11, Fontenoy order of battle, printed p. 95 (private reference PDF p. 96). Numeric scenario facts, not an exact historical OOB.",
+  "schedule": {
+    "startDate": "1745-05-01",
+    "daysPerTurn": 2,
+    "turnCount": 11,
+    "firstSide": "french"
+  },
+  "siege": {
+    "targetLocation": "Tournai",
+    "status": "not_started",
+    "progress": 0
+  },
+  "objectiveDefinitions": [
+    {
+      "side": "french",
+      "title": "Invest Tournai (proposed)",
+      "location": "Tournai"
+    },
+    {
+      "side": "allied",
+      "title": "Relieve Tournai (proposed)",
+      "location": "Tournai"
+    }
+  ],
+  "openingColumns": [
+    {
+      "side": "french",
+      "name": "French Column A",
+      "contingent": "french",
+      "unitOffset": 0,
+      "unitCount": 10,
+      "concealment": "visible",
+      "location": "Tournai",
+      "commander": "Maurice de Saxe"
+    },
+    {
+      "side": "french",
+      "name": "French Column B",
+      "contingent": "french",
+      "unitOffset": 10,
+      "unitCount": 10,
+      "concealment": "visible",
+      "location": "Lille",
+      "commander": null
+    },
+    {
+      "side": "allied",
+      "name": "Dutch Column",
+      "contingent": "dutch",
+      "unitOffset": 0,
+      "unitCount": 7,
+      "concealment": "visible",
+      "location": "Ath",
+      "commander": null
+    },
+    {
+      "side": "allied",
+      "name": "Anglo-Allied Column",
+      "contingent": "anglo_allied",
+      "unitOffset": 0,
+      "unitCount": 11,
+      "concealment": "visible",
+      "location": "Soignies",
+      "commander": "Duke of Cumberland"
+    }
+  ]
+}

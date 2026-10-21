@@ -1,0 +1,8 @@
+node_modules
+dist
+release
+package-lock.json
+docs/MAURICE_CAMPAIGN_CODING_PLAN.md
+test-results
+playwright-report
+contextonly

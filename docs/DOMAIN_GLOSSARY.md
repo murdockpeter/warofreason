@@ -1,0 +1,14 @@
+# Domain glossary (Milestone B)
+
+- **Campaign draft:** a saved preparation record. Legacy schema-1 drafts are unconfigured; schema-2 drafts contain the Fontenoy forces and proposed operational setup. Turn remains zero, with no current campaign date or active faction, until Start Campaign. This is distinct from an uncommitted form/setup edit.
+- **Uncommitted edit:** transient form input, retained across screen navigation and undoable until saved/discarded. It is not a campaign action and creates no journal event.
+- **Revision:** a positive, increasing campaign snapshot number. Commands that edit an existing campaign specify the revision they observed; stale revisions fail without mutation.
+- **Aggregate:** one campaign and its factions, units, commanders, columns and map squares. UUID references must resolve within this aggregate; IDs and map coordinates must be unique. Columns cannot contain another faction's units or commanders, nor assign an entity more than once.
+- **Unit classification:** Maurice type/quality vocabulary from the supplied plan. Regular infantry/cavalry use elite/trained/conscript; irregular units and artillery use null quality. No historical forces or tactical effects are seeded in B.
+- **Journal event:** an immutable committed change with actor, category, reason, timestamp, ruleset version and before/after campaign snapshots. Its after revision follows the previous snapshot. Imported history is structurally validated, not independently authenticated.
+- **Archive:** a retained, read-only campaign record. It can still be opened, exported or cloned.
+- **Clone:** an independent aggregate with new UUIDs, remapped references (including map edges and objectives), a new seed and a new journal recording the source campaign ID. Lifecycle returns to draft; the source record remains unchanged.
+- **Portable campaign JSON:** format `maurice-campaign`, current format version 2, aggregate schema 1 or 2 and complete journal. Legacy format-1 imports remain supported. Unknown versions are rejected rather than guessed or silently coerced.
+- **Module/ruleset version:** configured campaigns use module `0.1.0` and operational ruleset `house_rule_v0.1`; legacy records retain `unconfigured`. Published tactical rules/scenario facts, researched history and provisional operational choices remain separate provenance categories. Tactical Army Morale is never treated as campaign exhaustion.
+- **Contingent:** a unit's retained source grouping (`french`, `dutch`, `anglo_allied`), independent of the player's editable column assignments.
+- **Setup acknowledgement:** recorded player review of provisional operational choices and the unverified schematic. Both acknowledgements and complete assignments are required before starting; this does not certify historical accuracy or official campaign rules.

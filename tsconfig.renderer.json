@@ -1,0 +1,17 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "composite": true,
+    "jsx": "react-jsx",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": ["vite/client", "vitest/globals", "@testing-library/jest-dom"],
+    "tsBuildInfoFile": "./node_modules/.cache/renderer.tsbuildinfo"
+  },
+  "include": [
+    "src/renderer",
+    "src/domain",
+    "src/shared",
+    "tests/integration",
+    "tests/fixtures"
+  ]
+}
