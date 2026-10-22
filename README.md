@@ -29,6 +29,8 @@ npm run test:dev
 
 ## Available screens
 
+The application uses a medium-dark slate/charcoal palette with warm cream text and brass accents, framing the parchment campaign map. The same palette covers Help, inspection, forms and formation splitting; generated printable battle briefs retain their paper-friendly styling.
+
 Started campaigns now reopen directly on the map. **Right-click a formation** for movement, hold, split, inspection and scouting actions. The **Split formation** modal has two panes for transferring units and commanders. Route controls stay above the map; setup, rule configuration and detailed records are collapsed or accessible through **Campaign menu**. See [the map play guide](docs/MAP_PLAY.md).
 
 Use **ⓘ Help** at the bottom right (or **F1**) for the offline player manual and guidance on what to do next. **Inspect formation** now opens an intelligence modal with composition, readiness, commanders and roster; unknown enemy details stay withheld, and scouting information is labelled with its observation/expiry turn. Selecting a formation also exposes a direct **ⓘ Inspect** button above the map.

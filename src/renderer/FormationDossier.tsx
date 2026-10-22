@@ -32,25 +32,84 @@ export function FormationDossier({
       onDismiss={onDismiss}
     >
       <div className={`dossier-banner ${column.side ?? 'unknown'}`}>
-        <div>
-          <span className="dossier-kicker">FORMATION DOSSIER</span>
-          <h3>{column.displayName}</h3>
-          <p>
-            {column.side === 'french'
-              ? 'French'
-              : column.side === 'allied'
-                ? 'Allied'
-                : 'Faction unreported'}{' '}
-            · {square ? squareLabel(square) : 'Position unreported'}
-          </p>
+        <div className="dossier-emblem" aria-hidden="true">
+          <svg viewBox="0 0 120 120" fill="none">
+            <circle
+              cx="60"
+              cy="57"
+              r="42"
+              stroke="currentColor"
+              strokeOpacity=".3"
+            />
+            <circle
+              cx="60"
+              cy="57"
+              r="36"
+              stroke="currentColor"
+              strokeOpacity=".16"
+            />
+            <path
+              d="M30 89 78 25M90 89 42 25"
+              stroke="currentColor"
+              strokeWidth="3"
+              strokeLinecap="round"
+            />
+            <path
+              d="m42 27 22 3-12 19-15-5Zm36 0-22 3 12 19 15-5Z"
+              fill="currentColor"
+              fillOpacity=".8"
+            />
+            <path
+              d="M28 62q-8 24 22 34M92 62q8 24-22 34"
+              stroke="currentColor"
+              strokeWidth="2"
+            />
+            <path
+              d="m28 68-8-8 1 13 8 3m1 2-9-1 6 10 8 1m2 0-7 3 10 6 8-2m44-27 8-8-1 13-8 3m-1 2 9-1-6 10-8 1m-2 0 7 3-10 6-8-2"
+              fill="currentColor"
+              fillOpacity=".55"
+            />
+            <path
+              d="m60 53 3 7 8 1-6 5 2 8-7-4-7 4 2-8-6-5 8-1Z"
+              fill="currentColor"
+            />
+          </svg>
+          <span>FIELD RECORD</span>
         </div>
-        <span className="dossier-seal">
-          {own
-            ? view.view === 'umpire'
-              ? 'Umpire record'
-              : 'Your formation'
-            : (intel?.state ?? 'Limited intelligence')}
-        </span>
+        <div className="dossier-identity">
+          <span className="dossier-kicker">
+            CAMPAIGN DESK / FORMATION DOSSIER
+          </span>
+          <h3>{column.displayName}</h3>
+          <div className="dossier-identity-meta">
+            <span className={`dossier-faction ${column.side ?? 'unknown'}`}>
+              {column.side === 'french'
+                ? 'French'
+                : column.side === 'allied'
+                  ? 'Allied'
+                  : 'Faction unreported'}
+            </span>
+            <span className="dossier-position">
+              {square ? squareLabel(square) : 'Position unreported'}
+            </span>
+          </div>
+        </div>
+        <div className="dossier-access">
+          <span className="dossier-seal">
+            {own
+              ? view.view === 'umpire'
+                ? 'Umpire record'
+                : 'Your formation'
+              : (intel?.state ?? 'Limited intelligence')}
+          </span>
+          <small>
+            {own
+              ? 'Current assignments'
+              : snapshot
+                ? 'Observed intelligence'
+                : 'Unverified strength'}
+          </small>
+        </div>
       </div>
       <div className="dossier-intelligence">
         <h3>
@@ -117,8 +176,8 @@ export function FormationDossier({
               ? units.filter((u) => u.currentStatus === 'lost').length
               : '—',
           ],
-        ].map(([label, value]) => (
-          <div key={label}>
+        ].map(([label, value], index) => (
+          <div key={label} className={`dossier-metric metric-${index}`}>
             <dt>{label}</dt>
             <dd>{value}</dd>
           </div>
@@ -126,39 +185,61 @@ export function FormationDossier({
       </dl>
       {units ? (
         <>
+          <div className="dossier-overview-grid">
+            <section
+              className="dossier-composition"
+              aria-label="Formation composition"
+            >
+              <h3>
+                <span className="dossier-section-number" aria-hidden="true">
+                  01
+                </span>{' '}
+                Composition{snapshot ? ' at observation' : ''}
+              </h3>
+              <div className="composition-chips">
+                {(Object.keys(names) as (keyof typeof names)[]).map((type) => {
+                  const count = units.filter((u) => u.type === type).length;
+                  return count ? (
+                    <span key={type}>
+                      <strong>{count}</strong> {names[type]}
+                    </span>
+                  ) : null;
+                })}
+              </div>
+            </section>
+            <section
+              className="dossier-commanders"
+              aria-label="Formation commanders"
+            >
+              <h3>
+                <span className="dossier-section-number" aria-hidden="true">
+                  02
+                </span>{' '}
+                {snapshot ? 'Observed commanders' : 'Commanders'}
+              </h3>
+              {column.commanders?.length ? (
+                <ul>
+                  {column.commanders.map((name, index) => (
+                    <li key={`${name}:${index}`}>{name}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p>
+                  No commanders recorded{snapshot ? ' in this report' : ''}.
+                </p>
+              )}
+            </section>
+          </div>
           <section
-            className="dossier-composition"
-            aria-label="Formation composition"
+            className="dossier-roster-section"
+            aria-label="Formation roster"
           >
-            <h3>Composition{snapshot ? ' at observation' : ''}</h3>
-            <div className="composition-chips">
-              {(Object.keys(names) as (keyof typeof names)[]).map((type) => {
-                const count = units.filter((u) => u.type === type).length;
-                return count ? (
-                  <span key={type}>
-                    <strong>{count}</strong> {names[type]}
-                  </span>
-                ) : null;
-              })}
-            </div>
-          </section>
-          <section
-            className="dossier-commanders"
-            aria-label="Formation commanders"
-          >
-            <h3>{snapshot ? 'Observed commanders' : 'Commanders'}</h3>
-            {column.commanders?.length ? (
-              <ul>
-                {column.commanders.map((name, index) => (
-                  <li key={`${name}:${index}`}>{name}</li>
-                ))}
-              </ul>
-            ) : (
-              <p>No commanders recorded{snapshot ? ' in this report' : ''}.</p>
-            )}
-          </section>
-          <section aria-label="Formation roster">
-            <h3>{snapshot ? 'Observed roster' : 'Unit roster'}</h3>
+            <h3>
+              <span className="dossier-section-number" aria-hidden="true">
+                03
+              </span>{' '}
+              {snapshot ? 'Observed roster' : 'Unit roster'}
+            </h3>
             <div className="dossier-roster">
               <table>
                 <caption>

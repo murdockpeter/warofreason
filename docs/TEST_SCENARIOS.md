@@ -2,6 +2,8 @@
 
 ## Map-first interface acceptance
 
+Phase refresh verification measures the rendered counter against the actual square bounds, rather than only checking database positions. Cancel French resolution: D3 remains. Confirm it: counter renders E3. Stage/issue Allied L4→K4: counter stays L4. Resolve directly on Campaign Map: counter moves to K4 without navigation/reload, French remains E3, and the turn/date advance. Both built and packaged operational tests cover this path. Enemy contact still stops before the occupied square; faction intelligence remains an observed snapshot rather than live enemy tracking.
+
 Help/inspection: open ⓘ Help, read the current next-step card, switch topics and close without changing saved or uncommitted state. Verify F1/Escape and return of focus. Right-click an own formation → Inspect formation: inspect readiness/composition/commanders/current roster. In faction view, inspect a visible opponent without a report: withhold roster/count/commanders. Inspect a hidden opponent released by identification: show the dated snapshot and observed quality/status, never live tracking. Closing either dialog must leave campaign revision/journal unchanged. Verify both built and packaged apps offline and visually inspect the manual/dossier.
 
 Started campaigns reopen on the map with Campaign menu, Map options, Orders and formation details collapsed. Right-click or Shift+F10 opens the formation menu; enemy actions remain disabled. Move/hold stages ordinary validated orders, with route controls above the map. Phase review/resolution and required turn checkpoints remain explicit.

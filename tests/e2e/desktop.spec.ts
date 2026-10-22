@@ -28,9 +28,14 @@ for (const packaged of [false, true]) {
         page.getByRole('heading', { name: 'Dashboard', exact: true }),
       ).toBeVisible();
       await expect(page.locator('.app-shell')).toHaveCSS('display', 'block');
+      await expect(page.locator('html')).toHaveCSS('color-scheme', 'dark');
+      await expect(page.locator('.panel').first()).toHaveCSS(
+        'background-color',
+        'rgb(54, 57, 59)',
+      );
       await expect(page.locator('.sidebar')).toHaveCSS(
         'background-color',
-        'rgb(32, 61, 52)',
+        'rgb(36, 39, 42)',
       );
       await expect(page.locator('.status-strip')).toHaveCSS('display', 'grid');
       for (const name of [

@@ -1,6 +1,6 @@
 import { selectMapView } from './profile';
 import { expect, test } from '@playwright/test';
-import type { ElectronApplication } from '@playwright/test';
+import type { ElectronApplication, Page } from '@playwright/test';
 import path from 'node:path';
 import { readFileSync } from 'node:fs';
 import {
@@ -11,6 +11,40 @@ import {
 } from './profile';
 import { SqliteCampaignRepository } from '../../src/main/persistence/repository';
 import type { FontenoyCampaign } from '../../src/domain/campaign';
+
+async function expectCounterInSquare(
+  page: Page,
+  formation: string,
+  reference: string,
+) {
+  const counter = page.getByRole('button', {
+    name: `Select ${formation}`,
+    exact: true,
+  });
+  const square = page
+    .getByRole('button', { name: new RegExp(`^Square ${reference}(?: |$)`) })
+    .locator('rect');
+  await expect
+    .poll(
+      async () => {
+        const [marker, cell] = await Promise.all([
+          counter.boundingBox(),
+          square.boundingBox(),
+        ]);
+        if (!marker || !cell) return false;
+        const x = marker.x + marker.width / 2;
+        const y = marker.y + marker.height / 2;
+        return (
+          x > cell.x &&
+          x < cell.x + cell.width &&
+          y > cell.y &&
+          y < cell.y + cell.height
+        );
+      },
+      { message: `${formation} counter should render inside ${reference}` },
+    )
+    .toBe(true);
+}
 
 for (const packaged of [false, true]) {
   test(`${packaged ? 'packaged' : 'built'} operational planning, privacy, resolution and day advancement`, async () => {
@@ -178,6 +212,9 @@ for (const packaged of [false, true]) {
         .click();
       await expect(page.getByRole('alert')).toHaveCount(0);
       expect(await snapshot()).toEqual(beforeCancel);
+      await navigateTo(page, 'Campaign Map');
+      await expectCounterInSquare(page, seeded.columns[0]!.displayName, 'D3');
+      await navigateTo(page, 'Turn Orders');
       await app.evaluate(({ dialog }) => {
         dialog.showMessageBox = async () => ({
           response: 1,
@@ -189,17 +226,36 @@ for (const packaged of [false, true]) {
         .click();
       await expect(page.getByText('allied · planning · turn 1')).toBeVisible();
       expect((await snapshot()).active!.columns[0]!.squareId).toBe(squares[1]);
+      await navigateTo(page, 'Campaign Map');
+      await expectCounterInSquare(page, seeded.columns[0]!.displayName, 'E3');
+      await page
+        .getByRole('button', {
+          name: `Select ${seeded.columns[3]!.displayName}`,
+          exact: true,
+        })
+        .click();
+      await page
+        .getByRole('button', { name: 'Square K4', exact: true })
+        .click();
+      await page
+        .getByRole('button', { name: 'Add order', exact: true })
+        .click();
+      await expectCounterInSquare(page, seeded.columns[3]!.displayName, 'L4');
+      await navigateTo(page, 'Turn Orders');
       await page
         .getByRole('button', { name: 'Issue orders', exact: true })
         .click();
+      await navigateTo(page, 'Campaign Map');
+      await expectCounterInSquare(page, seeded.columns[3]!.displayName, 'L4');
       await page
-        .getByRole('button', { name: 'Resolve orders', exact: true })
+        .getByRole('button', { name: 'Confirm phase resolution', exact: true })
         .click();
       await expect(page.getByText('french · planning · turn 2')).toBeVisible();
       await expect(
         page.getByRole('region', { name: 'Campaign status' }),
       ).toContainText('1745-05-03');
-      await navigateTo(page, 'Campaign Map');
+      await expectCounterInSquare(page, seeded.columns[0]!.displayName, 'E3');
+      await expectCounterInSquare(page, seeded.columns[3]!.displayName, 'K4');
       await selectMapView(page, 'french');
       await expect(
         page.getByRole('button', {

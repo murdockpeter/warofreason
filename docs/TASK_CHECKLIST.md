@@ -2,6 +2,20 @@
 
 Milestones A–F are complete. The user has now requested a map-first interface simplification increment before G. Further interface refinement and human playtesting remain ongoing work.
 
+## Phase map refresh verification — 2026-10-22
+
+- [x] Strengthen the existing operational Electron checks to measure rendered counter positions inside their target square, alongside saved state. Verify cancellation leaves French at D3, confirmed French resolution renders E3, staging/issuing Allied orders retains L4, and resolving directly on the still-mounted map immediately renders K4 while advancing the turn. Both built and packaged checks pass; typecheck and formatting pass. No application change was necessary.
+
+## Medium-dark livery — 2026-10-22
+
+- [x] Formation dossier visual refinement: generously rounded 26px modal corners, double brass edge, deeper framing, a generic original crossed-standard emblem, clearer formation identity/location/access badges, stronger readiness cards and paired composition/commander panels. Numbered roster sections, refined table headings and responsive stacking complete the presentation. The emblem frame provides a visual home for later formation artwork; no speculative image-management controls were added.
+- [x] Dossier refinement validation: five existing guidance/privacy integration tests pass; built and packaged offline manual/dossier checks pass. Typecheck, lint, changed-file formatting, production build and Windows packaging pass. Rendered dossier screenshots were visually inspected, including the packaged app. No campaign data or player profiles were changed.
+
+- [x] Replace the cream/green presentation with medium-dark charcoal/slate surfaces, warm light text and muted brass actions; centralise the palette in CSS custom properties.
+- [x] Apply the palette to navigation, status, forms, tables, context menus, Help, formation dossiers, split panes and feedback states; keep map artwork/counter identity colours and printable brief styling intact.
+- [x] Match Electron's initial window background to the new theme and use dark native controls/scrollbars. Main text/panel contrast is 9.53:1, secondary text/panel 6.27:1 and primary action text/fill 6.03:1, calculated from the palette.
+- [x] Validation: typecheck, lint, whole-project Prettier, production build and Windows packaging pass. Six built/packaged smoke, map-play and guide/dossier checks pass, plus one development startup/style check. Computed dark colour scheme/panel/chrome assertions pass. Packaged map, manual, dossier and split screenshots were visually inspected; no campaign data, rules or player profiles changed.
+
 - [x] A01 Initialize repository, README, license and development/build/check/package scripts.
 - [x] A02 Secure Electron + Vite + React + strict TypeScript; typed validated preload IPC.
 - [x] A03 Dashboard, Campaign Map, Armies/Columns, Turn Orders, Battle Log, Siege & Victory, Settings navigation.

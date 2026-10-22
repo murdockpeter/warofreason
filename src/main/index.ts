@@ -62,7 +62,7 @@ function createWindow() {
     minWidth: 900,
     minHeight: 650,
     show: false,
-    backgroundColor: '#f4f1e9',
+    backgroundColor: '#292c2e',
     title: 'Maurice Campaign Companion',
     webPreferences: {
       preload: path.join(__dirname, '../preload/index.cjs'),
