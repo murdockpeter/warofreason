@@ -110,7 +110,7 @@ Scenario tables and examples have occasional naming/mode inconsistencies, and th
 
 ## Proposed simultaneous movement design
 
-The following is an adaptation proposal, not published Waterloo procedure. Only the requirement for simultaneous movement is settled; numerical budgets and collision policies remain to be selected.
+The following records the initial adaptation proposal, not published Waterloo procedure. Concrete proposed values and timing/collision decisions are now supplied by [the movement and timing specification](WATERLOO_MOVEMENT_SPEC.md), which takes precedence over unresolved design options below. They remain original draft defaults for implementation and playtesting.
 
 1. Complete shared start-of-turn procedures, weather and withdrawals; produce a stable phase-start snapshot.
 2. Both sides plan private orders against that snapshot. Support several ordered activation segments per corps so repeated movement can survive the adaptation. A finite phase budget and a common time model must be agreed before implementation; the published pass rule cannot be retained literally.

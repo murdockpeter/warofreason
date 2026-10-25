@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import packageMetadata from '../../package.json' with { type: 'json' };
 import {
   navigateTo,
   launchDesktop,
@@ -53,7 +54,9 @@ test('development renderer starts with external network blocked', async () => {
       )
       .toBe(true);
     await navigateTo(page, 'Settings');
-    await expect(page.getByText('0.6.0', { exact: true })).toBeVisible();
+    await expect(
+      page.getByText(packageMetadata.version, { exact: true }),
+    ).toBeVisible();
     expect(await page.evaluate(() => typeof window.desktop.getAppInfo)).toBe(
       'function',
     );

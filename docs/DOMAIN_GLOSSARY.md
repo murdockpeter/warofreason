@@ -1,5 +1,18 @@
 # Domain glossary
 
+The entries below primarily describe the existing Fontenoy profile. The new simultaneous profile adds:
+
+- **Shared phase:** an AM/PM planning window with separate side submissions and one campaign clock; there is no active-side movement advantage.
+- **Activation segment:** a predeclared corps path with travel mode, HQ and earliest departure, bounded by movement allowance and a 120-minute window. Up to three per corps per phase.
+- **Army versus side:** French opposes the Allied side. In Fontenoy, Dutch and Anglo-Allied formations retain distinct HQ affiliations; Prussian formations belong only to the earlier reference fixture.
+- **Tactical reinforcement window:** conditional earliest/likely/latest times at an approach edge, expressed in campaign time and optionally external-game turns. Commitment reserves the whole corps; an estimate alone does not.
+- **Manual result revision:** a neutral external-game record with explicit campaign decisions. Recording, approving and applying are distinct. Corrections supersede earlier revisions and compensate applied effects only without later dependencies.
+- **Schema 3:** the simultaneous aggregate supports `maurice_operational_v0.1` for Fontenoy and the earlier `waterloo_simultaneous_v0.1` reference fixture. Fontenoy carries its actual Maurice unit/commander mappings and siege/objective context. Export format 2 supports aggregate schemas 1, 2 and 3. Existing Fontenoy histories retain their prior payloads and rules.
+- **Ordinary screen:** a stationary detachment allocated from a named parent corps. It projects adjacent control, can be deployed by an associated HQ once per phase, and can return to reserve by recall. Recalled screens are available next phase; their actual tactical troops must not duplicate the parent roster.
+- **Simultaneous withdrawal:** an independently locked three-step retreat before movement. A shared preview/confirmation resolves both sides together; blocked corps become blown and all withdrawing corps hold for the rest of the phase. Empty holds consume no time. This opt-in preparation state preserves earlier schema-3 journals without rewriting them.
+
+See [the current simultaneous gameplay guide](MAURICE_FONTENOY_OPERATIONS.md).
+
 - **Campaign aftermath:** a separate confirmed review of a frozen battle result, recording losses/rebuilding, scheduled rest, commander decisions, agreed squares, manual Epic Points and independent exhaustion additions. It releases the battle hold once and retains the original tactical record.
 - **Opening/current quality:** `initialQuality` retains a rebuilt regular unit's opening elite/trained fact; `quality` is its current classification, including conscript. Scenario totals validate opening facts, while new briefs use current classification. Artillery/irregular quality remains null.
 - **Completed-turn checkpoint:** an explicit pause after both faction phases; finalization processes due recoveries, verified supplied investment and victory once after all encounters/results/reviews are complete. An outcome locks further strategic play.

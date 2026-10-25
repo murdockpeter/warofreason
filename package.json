@@ -1,7 +1,7 @@
 {
   "name": "maurice-campaign-companion",
-  "version": "0.6.0",
-  "description": "Local-first Maurice campaign companion - aftermath, siege and victory",
+  "version": "0.9.0",
+  "description": "Maurice Fontenoy campaign companion - simultaneous operations and manually adjudicated tactical battles",
   "main": "dist/main/index.cjs",
   "scripts": {
     "postinstall": "node node_modules/electron/install.js",

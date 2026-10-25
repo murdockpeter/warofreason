@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { waterlooCommandSchema } from '../domain/waterloo-schema';
 import { tabletopCommandSchema } from '../domain/tabletop-schema';
 import { aftermathCommandSchema } from '../domain/aftermath-schema';
 import { idSchema, librarySchema, titleSchema } from '../domain/campaign';
@@ -21,12 +22,20 @@ export const revisionRefSchema = campaignRefSchema.extend({
   expectedRevision: z.number().int().positive(),
 });
 export const createCampaignSchema = z
-  .object({ title: titleSchema, ...audit })
+  .object({
+    title: titleSchema,
+    ...audit,
+    profile: z.literal('simultaneous_fontenoy').optional(),
+  })
   .strict();
 export const renameCampaignSchema = revisionRefSchema.extend({
   title: titleSchema,
   ...audit,
 });
+export const cloneCampaignSchema = renameCampaignSchema.extend({
+  profile: z.literal('simultaneous_fontenoy').optional(),
+});
+export type CloneCampaignInput = z.infer<typeof cloneCampaignSchema>;
 export const archiveCampaignSchema = revisionRefSchema.extend(audit);
 export const operationalInputSchema = archiveCampaignSchema.extend({
   command: operationalCommandSchema,
@@ -38,6 +47,10 @@ export type TabletopInput = z.infer<typeof tabletopInputSchema>;
 export const aftermathInputSchema = archiveCampaignSchema.extend({
   command: aftermathCommandSchema,
 });
+export const waterlooInputSchema = archiveCampaignSchema.extend({
+  command: waterlooCommandSchema,
+});
+export type WaterlooInput = z.infer<typeof waterlooInputSchema>;
 export type AftermathInput = z.infer<typeof aftermathInputSchema>;
 export const battleDocumentInputSchema = revisionRefSchema.extend({
   battleId: idSchema,
@@ -78,6 +91,8 @@ export const fileResultSchema = resultSchema(
 export type LibraryResult = z.infer<typeof libraryResultSchema>;
 export type FileResult = z.infer<typeof fileResultSchema>;
 export interface CampaignApi {
+  createWaterlooCampaign(input: CreateCampaignInput): Promise<LibraryResult>;
+  commitWaterlooAction(input: WaterlooInput): Promise<LibraryResult>;
   commitAftermathAction(input: AftermathInput): Promise<LibraryResult>;
   commitTabletopAction(input: TabletopInput): Promise<LibraryResult>;
   rollScoutingDie(): Promise<number>;
@@ -92,7 +107,7 @@ export interface CampaignApi {
   getCampaignLibrary(): Promise<LibraryResult>;
   createCampaign(input: CreateCampaignInput): Promise<LibraryResult>;
   renameCampaign(input: RenameCampaignInput): Promise<LibraryResult>;
-  cloneCampaign(input: RenameCampaignInput): Promise<LibraryResult>;
+  cloneCampaign(input: CloneCampaignInput): Promise<LibraryResult>;
   archiveCampaign(input: ArchiveCampaignInput): Promise<LibraryResult>;
   openCampaign(
     input: z.infer<typeof campaignRefSchema>,
@@ -102,6 +117,8 @@ export interface CampaignApi {
   confirmDiscardDraft(): Promise<boolean>;
 }
 export const campaignChannels = {
+  waterlooCreate: 'campaign:waterloo-create',
+  waterlooAction: 'campaign:waterloo-action',
   aftermath: 'campaign:aftermath-action',
   tabletop: 'campaign:tabletop-action',
   scoutDie: 'campaign:scout-die',

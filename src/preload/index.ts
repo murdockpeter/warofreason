@@ -23,9 +23,25 @@ import {
   aftermathInputSchema,
   battleDocumentInputSchema,
   scoutRollSchema,
+  waterlooInputSchema,
+  cloneCampaignSchema,
 } from '../shared/campaign-contracts';
 
 const api = Object.freeze<DesktopApi>({
+  createWaterlooCampaign: async (input) =>
+    libraryResultSchema.parse(
+      await ipcRenderer.invoke(
+        campaignChannels.waterlooCreate,
+        createCampaignSchema.parse(input),
+      ),
+    ),
+  commitWaterlooAction: async (input) =>
+    libraryResultSchema.parse(
+      await ipcRenderer.invoke(
+        campaignChannels.waterlooAction,
+        waterlooInputSchema.parse(input),
+      ),
+    ),
   commitAftermathAction: async (input) =>
     libraryResultSchema.parse(
       await ipcRenderer.invoke(
@@ -106,7 +122,7 @@ const api = Object.freeze<DesktopApi>({
     libraryResultSchema.parse(
       await ipcRenderer.invoke(
         campaignChannels.clone,
-        renameCampaignSchema.parse(input),
+        cloneCampaignSchema.parse(input),
       ),
     ),
   archiveCampaign: async (input) =>

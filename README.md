@@ -1,5 +1,11 @@
 # Maurice Campaign Companion
 
+**Maurice and Fontenoy/Tournai, 1745 remain the core setting.** The C3i rules supply adapted operational mechanics. **0.9.0** adds reviewed per-unit battle observations, loss/rebuilding and calendar-based recovery to simultaneous Fontenoy operations. Screens/withdrawals, reinforcement timing, own-side overlays and manually adjudicated tactical battles remain available. See [the Fontenoy operational guide](docs/MAURICE_FONTENOY_OPERATIONS.md).
+
+Choose **New simultaneous Fontenoy campaign**, or **Create simultaneous Fontenoy copy** from a saved setup. Both use the existing French 20 / Allied 18 Maurice force, Fontenoy-area locations, commanders and Tournai objectives. The earlier Crossroads prototype remains a compatibility/test fixture. Current integration work is tracked in [the Maurice operational TODO](docs/MAURICE_OPERATIONAL_TODO.md).
+
+To use unit aftermath, expand **Maurice unit recovery** during clear umpire planning and review/enable its policy. Review the proposed **48 calendar hours per recovery turn** from the usual two-day source schedule. Record per-unit outcomes in the manual battle result, approve the effects and resume resolution. **Finish shared phase** processes due recoveries. All recovery policies and time conversion are configurable campaign house rules; tactical Army Morale/disruption remain observations. Existing saves are retained and need explicit enablement. Tournai's shared-phase siege/victory integration is the next TODO increment.
+
 An offline Electron desktop companion for tabletop Maurice campaigns. **Milestones A–F** provide the secure desktop shell, persistent campaigns, reviewed Fontenoy setup, operational orders, scouting, printable battle briefs, confirmed manual results and explicit campaign aftermath, recovery, siege and victory. Milestone G covers campaign summaries, further printing and playtesting; interface simplification follows.
 
 ## Run locally (Windows 11)

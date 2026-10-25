@@ -131,8 +131,9 @@ describe('formation splitting', () => {
         forged.events.at(-1)!.after.schemaVersion !== 2
       )
         throw new Error('Configured campaign expected.');
-      forged.events.at(-1)!.after.columns.at(-1)!.squareId =
-        c.columns[2]!.squareId;
+      (forged.events.at(-1)!.after as FontenoyCampaign).columns.at(
+        -1,
+      )!.squareId = c.columns[2]!.squareId;
       forged.campaign = structuredClone(forged.events.at(-1)!.after);
       expect(exportSchema.safeParse(forged).success).toBe(false);
     } finally {

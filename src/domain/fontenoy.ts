@@ -12,6 +12,8 @@ export function seedFontenoy(
   campaign: Campaign,
   uuid: () => string,
 ): FontenoyCampaign {
+  if (campaign.schemaVersion === 3)
+    throw new Error('A simultaneous campaign cannot load the Fontenoy module.');
   const module = fontenoyModule;
   const factions = (['french', 'allied'] as const).map((side) => ({
     id: uuid(),

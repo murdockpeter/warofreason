@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import packageMetadata from '../../package.json' with { type: 'json' };
 import {
   navigateTo,
   launchDesktop,
@@ -74,7 +75,9 @@ for (const packaged of [false, true]) {
             });
         }
       }
-      await expect(page.getByText('0.6.0', { exact: true })).toBeVisible();
+      await expect(
+        page.getByText(packageMetadata.version, { exact: true }),
+      ).toBeVisible();
       expect(
         await app.evaluate(({ app }) => Reflect.get(app, 'smokeLoadErrors')),
       ).toEqual([]);
@@ -128,6 +131,8 @@ for (const packaged of [false, true]) {
           'logError',
           'getCampaignLibrary',
           'createCampaign',
+          'createWaterlooCampaign',
+          'commitWaterlooAction',
           'renameCampaign',
           'cloneCampaign',
           'archiveCampaign',

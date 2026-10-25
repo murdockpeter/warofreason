@@ -1,8 +1,60 @@
 # Running implementation checklist
 
+## Simultaneous Maurice unit aftermath — 2026-10-25 / 0.9.0
+
+- [x] Explicit opt-in policy with source-cadence calendar conversion, shared regular/irregular/artillery recovery strategies and fixed scheduled dates.
+- [x] Manual frozen-unit outcomes, optional disruption/notes and final Army Morale; record/approve preserve units until battle-end resolution applies reviewed effects.
+- [x] Conscripts preserve original quality, retired rest preserves classification, losses retain identity, future briefs include only ready units, and phase finalization processes due recovery once.
+- [x] Safe result revisions restore the exact unit baseline and replace only that battle's queue; dependent corrections remain blocked. SQLite action/journal writes are atomic, restart/import replay is validated, and fresh clones restore opening readiness/quality.
+- [x] Umpire policy/results and faction-filtered recovery queues, session draft/discard guards, Help and detailed operational documentation.
+- [x] 187 unit/integration tests pass, including transaction rollback, time conversion, pre-application observations, correction, classification, source conservation, queue privacy, ready-only briefs, empty-formation/early-return rejection, portable replay and clean cloning. Typecheck and lint pass.
+- [x] All 25 built/packaged regression checks pass. The new flows record/approve a broken unit, cancel/confirm actions, apply rebuilding at battle end, restart, cancel/confirm recovery finalization, export/import and restart again. Production build and Windows packaging pass; packaged after-action summary visually inspected. No player profile or prior history was modified. Shared-phase Tournai siege/victory remains the next integration item.
+- [x] Development startup/navigation/style check passes with external requests blocked; whole-project formatting and final whitespace checks pass.
+
+## Fontenoy hex-map period backdrop — 2026-10-25
+
+- [x] Generate and bundle original engraved-watercolour Flanders/1745 artwork, retaining its final prompt in `assets/maps/fontenoy-1745-operational-backdrop-v1.prompt.md` and preserving earlier map artwork.
+- [x] Render it behind the Fontenoy hex grid with translucent terrain, readable outlined place/HQ labels, unchanged operational overlays and an optional plain-map toggle. Decorative geography does not alter movement data.
+- [x] Typecheck, lint, whole-project formatting, production build and Windows packaging pass. Both built/packaged Fontenoy walkthroughs pass, including actual offline image decoding, backdrop toggle, simultaneous movement, saved-setup copy and restart persistence. Packaged rendered map visually inspected. Existing player campaign retained and app reopened with the new artwork.
+
+## Maurice / Fontenoy setting correction — 2026-10-25
+
+The current scope is Maurice-centred Fontenoy/Tournai in 1745. C3i Waterloo supplies operational mechanics only. The [Fontenoy operational guide](MAURICE_FONTENOY_OPERATIONS.md) and [aligned TODO](MAURICE_OPERATIONAL_TODO.md) take precedence over earlier Crossroads/Waterloo scenario plans below.
+
+- [x] Create actual simultaneous Fontenoy campaigns with the sourced 38-unit Maurice roster, opening qualities/contingents, 1745 dates, existing geography, French/Dutch/Anglo-Allied columns, appropriate commanders and Tournai objectives.
+- [x] Offer independent fresh operational copies of saved Fontenoy setups, preserving source histories and configured map edges. Cloning an operational Fontenoy campaign retains its setting and unit mappings.
+- [x] Display mapped Maurice rosters/commanders and freeze them into battle/reinforcement briefs. Default the external tactical game to Maurice while retaining manually editable outcomes and arrivals.
+- [x] Retain simultaneous movement, reinforcement windows, opt-in screening/withdrawals and own-side overlays. Preserve the established Fontenoy workflow, including its full aftermath/siege features; their integration into simultaneous play remains explicitly pending.
+- [x] Final corrected-profile verification: all 169 unit/integration tests and all 23 built/packaged desktop checks pass, including real Fontenoy creation, movement, restart, saved-setup copying and source history preservation. Development launch with external requests blocked, typecheck, lint, whole-project formatting, build and Windows packaging pass. Packaged Fontenoy map/roster visually inspected. ASAR version 0.8.0 and main/preload build consistency verified; private references/PDFs excluded. Tests use isolated profiles; no player profile changed and no push/publish occurred.
+
 ## New operational direction — 2026-10-25
 
-The Waterloo-based adaptation now has a separate [rules/repository review](WATERLOO_RULES_REVIEW.md) and [implementation TODO](WATERLOO_TODO.md). Its agreed scope includes simultaneous movement, externally resolved tactical battles with editable manual results, likely reinforcement arrival windows and original replacement charts. These documents plan future work; the completed implementation history below remains unchanged.
+Historical research: the C3i adaptation has a separate [rules/repository review](WATERLOO_RULES_REVIEW.md) and [earlier implementation TODO](WATERLOO_TODO.md). Its agreed mechanics include simultaneous movement, externally resolved tactical battles with editable manual results, likely reinforcement arrival windows and original replacement charts. Waterloo-specific scenario plans are superseded by the setting correction above.
+
+P0 design drafting is complete in the [movement and timing specification](WATERLOO_MOVEMENT_SPEC.md). Version 0.7.0 supplies the first playable Crossroads slice; 0.8.0 adds opt-in preparation and overlays. Original chart calibration and the broader historical adaptation remain open. See [the play guide](WATERLOO_PLAY.md) and current Waterloo backlog for the precise implementation boundary.
+
+## Ordinary screens, simultaneous withdrawal and overlays — 2026-10-25
+
+- [x] Add optional `waterloo_preparation_v0.1` state without inserting defaults into earlier schema-3 snapshots or changing earlier receipt replay. Explicit enablement allocates one abstract screening element per corps; tactical roster allocation stays manual.
+- [x] Enforce army/parent linkage, one placement per HQ/phase, legal HQ/parent traces, Normal-mode road doubling, no placement in any unit zone, stationary deployment, recall and next-phase availability. Freeze HQ/chart/return stages once deployment or withdrawal planning starts; support the empty road-adjacent HQ fallback when no army units are on-map.
+- [x] Save independent withdrawal drafts/locks, preserve them through navigation/restart, preview both sides in umpire view, and confirm three shared 20-minute retreat steps. Enforce geometry, enemy control, explicit friendly priority, no corps pass-through, blocked/trapped blown outcomes and a rest-of-phase hold. Credit other corps' concurrent preparation and process organization before withdrawal.
+- [x] Add managed-screen tactical recall/elimination/retention, legal friendly corps/screen stacking and deep result baselines so corrections restore HQ/availability metadata without changing earlier records or adding troops.
+- [x] Add own-side control, corps influence and HQ command overlays, HQ/DET markers, own-only withdrawal/deployment controls and holding explanations. Keep opposing orders, reserve rosters and HQ ratings out of faction UI.
+- [x] Validation: 163 unit/integration tests pass, including new reserve/deployment/recall, trapped/contested retreat, preparation timing, commander fallback, roster conservation, correction, replay/transfer/tamper and UI draft/privacy checks. Standard `npm test` now caps workers at two to prevent replay-heavy SQLite tests competing with many jsdom workers; test timeouts/assertions remain unchanged. Typecheck, lint, whole-project formatting, production build and unpacked Windows packaging pass.
+- [x] Final built/packaged desktop, development-launch and archive checks pass as recorded in the corrected-profile acceptance above, including both screening/withdrawal restart walkthroughs.
+
+## Simultaneous Crossroads gameplay — 2026-10-25
+
+- [x] Add schema-3 operational profile and independent original 117-hex scenario, preserving schema-1/2 imports, journals and Fontenoy gameplay. Keep SQL migration 001 and export format 2; record/replay validated Waterloo action receipts.
+- [x] Add French/Anglo-Allied/Prussian army affiliations, corps formation/readiness, HQ mode/placement, original movement/terrain/bridge/weather timing and due blown-return review.
+- [x] Save/lock both sides' timed movement segments independently; resolve on one shared clock with command/zone checks, explicit friendly priorities, congestion, hostile contention, contacts/stand-offs and phase checkpoints. Route drafts survive navigation and native cancellation.
+- [x] Freeze shared battle briefs and conditional reinforcement windows/entry edges; permit reasoned arrival overrides and optional tactical-turn conversion, prevent duplicate commitments and export escaped HTML/real PDFs.
+- [x] Record neutral external tactical results with complete force/arrival/position review, separate effect approval/application, immutable revision history and compensation when no later effects depend on the old result. Preserve cancelled result drafts and restart/backup state.
+- [x] Add map controls, faction display filters, profile-specific offline Help and [workflow documentation](WATERLOO_PLAY.md); keep historical scenarios, detachments/special rules, simultaneous withdrawal, full reinforcement interception and scenario victory scoring explicitly unimplemented in this slice.
+- [x] Domain/integration verification: 142 tests pass, including new command/geometry/zone/weather, locking/collision, reinforcement reservation/override, manual correction, persistence/replay/tamper, legacy compatibility, faction disclosure and draft-retention checks. Typecheck, lint, whole-project formatting, production build and unpacked Windows packaging pass.
+- [x] Desktop verification: 17 of 19 checks passed in the full run, including both new built/packaged Crossroads walkthroughs. The two startup checks passed on rerun after replacing their fixed 0.6.0 expectations with package metadata and adding the two named Waterloo methods to the bridge allowlist. Thus all 19 desktop checks pass across those runs. Development launch/navigation/style also passes with external network requests blocked, after the same version-expectation update.
+- [x] The new desktop flows verify one-side lock persistence, confirmed/cancelled simultaneous resolution, shared phase advancement, contact, reinforcement commitment, real HTML/PDF export, cancelled result draft retention, separate result/effect application, a superseding correction, faction display filtering and final restart persistence. The rendered original hex map was visually inspected. Packaged ASAR version 0.7.0 and main/preload consistency were checked; private references/PDFs are excluded. Tests use isolated profiles; no player profile was changed and no push/publish occurred.
+- Validation note: one existing repository test exceeded its five-second timeout while tests and packaging ran concurrently; the full 142-test run passed when rerun without packaging competition. No timeout threshold was changed. Human tabletop playtesting, detailed chart calibration, installer signing and remaining adaptation rules stay open.
 
 Milestones A–F are complete. The user has now requested a map-first interface simplification increment before G. Further interface refinement and human playtesting remain ongoing work.
 

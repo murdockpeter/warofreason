@@ -21,6 +21,14 @@ export function CampaignDashboard() {
               New campaign
             </button>
             <button
+              disabled={busy || !library}
+              onClick={() => {
+                void state.createFontenoyOperations();
+              }}
+            >
+              New simultaneous Fontenoy campaign
+            </button>
+            <button
               className="secondary"
               disabled={busy || !library}
               onClick={() => {
@@ -182,22 +190,44 @@ export function CampaignDashboard() {
           <p>
             {active.status === 'archived'
               ? 'Archived record. Clone it to create an editable copy.'
-              : active.schemaVersion === 1
-                ? 'Saved legacy draft. Load the Fontenoy module to review its forces and provisional setup.'
-                : active.status === 'active'
-                  ? 'Campaign started with the reviewed setup. Movement and turn resolution are deferred to Milestone D.'
-                  : 'Saved Fontenoy draft. French: 20 · Allied: 18 (Dutch: 7, Anglo-Allied: 11). Review and edit provisional column assignments before starting.'}
+              : active.schemaVersion === 3
+                ? active.fontenoy
+                  ? 'Maurice — Fontenoy, 1745. French 20 / Allied 18, with Dutch and Anglo-Allied rosters, Tournai objectives and simultaneous operations. Maurice is the default tactical game; outcomes remain manual.'
+                  : 'Earlier operational reference scenario. Create a Fontenoy campaign to use Maurice forces, commanders, geography and objectives.'
+                : active.schemaVersion === 1
+                  ? 'Saved legacy draft. Load the Fontenoy module to review its forces and provisional setup.'
+                  : active.status === 'active'
+                    ? 'Campaign started with the reviewed setup. Movement and turn resolution are deferred to Milestone D.'
+                    : 'Saved Fontenoy draft. French: 20 · Allied: 18 (Dutch: 7, Anglo-Allied: 11). Review and edit provisional column assignments before starting.'}
           </p>
           <div className="button-row">
+            {active.schemaVersion === 2 && (
+              <button
+                disabled={busy}
+                onClick={() => {
+                  void state.copyFontenoyOperations();
+                }}
+              >
+                Create simultaneous Fontenoy copy
+              </button>
+            )}
             <button
               disabled={busy}
               onClick={() => {
-                useSession.getState().navigate('Armies/Columns');
+                useSession
+                  .getState()
+                  .navigate(
+                    active.schemaVersion === 3
+                      ? 'Campaign Map'
+                      : 'Armies/Columns',
+                  );
               }}
             >
-              {active.schemaVersion === 1
-                ? 'Load Fontenoy setup'
-                : 'Review Fontenoy setup'}
+              {active.schemaVersion === 3
+                ? 'Open simultaneous map'
+                : active.schemaVersion === 1
+                  ? 'Load Fontenoy setup'
+                  : 'Review Fontenoy setup'}
             </button>
             <button
               className="secondary"

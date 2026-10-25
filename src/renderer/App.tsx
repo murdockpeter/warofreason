@@ -12,6 +12,8 @@ import { SiegeVictory } from './SiegeVictory';
 import { useOperationalSession } from './operational-session';
 import { SplitFormation } from './SplitFormation';
 import { HelpManual } from './HelpManual';
+import { WaterlooDesk } from './WaterlooDesk';
+import { campaignTime } from '../domain/waterloo';
 
 const descriptions: Record<
   Screen,
@@ -88,6 +90,7 @@ export function App() {
     setupDraft,
     planningDraft,
     tabletopDraft,
+    waterlooDraft,
     pending: campaignPending,
     initialize,
   } = useCampaigns();
@@ -105,6 +108,7 @@ export function App() {
     const guard = (event: BeforeUnloadEvent) => {
       if (
         useCampaigns.getState().planningDraft ||
+        useCampaigns.getState().waterlooDraft ||
         useCampaigns.getState().tabletopDraft ||
         useCampaigns.getState().draft ||
         useCampaigns.getState().setupDraft ||
@@ -142,6 +146,7 @@ export function App() {
   const content = descriptions[screen];
   const current = setupDraft ?? library?.active;
   const scenario = current?.schemaVersion === 2 ? current : null;
+  const waterloo = current?.schemaVersion === 3 ? current : null;
   return (
     <div
       className={`app-shell ${screen === 'Campaign Map' ? 'map-focused' : ''}`}
@@ -198,7 +203,11 @@ export function App() {
             Campaign Map
           </button>
           <span>
-            THE ROAD TO FONTENOY <span className="muted">/ 1745</span>
+            {waterloo
+              ? waterloo.fontenoy
+                ? 'THE ROAD TO FONTENOY / 1745 · SIMULTANEOUS OPERATIONS'
+                : 'OPERATIONAL REFERENCE SCENARIO'
+              : 'THE ROAD TO FONTENOY / 1745'}
           </span>
           <span className="badge">
             {library?.active?.status === 'archived'
@@ -214,50 +223,65 @@ export function App() {
           {[
             [
               'Campaign day',
-              scenario?.date
-                ? `${scenario.date} · turn ${scenario.turn}`
-                : 'Not started',
+              waterloo
+                ? `${campaignTime(waterloo, waterloo.cursor)} · ${waterloo.turn % 2 ? 'AM' : 'PM'}`
+                : scenario?.date
+                  ? `${scenario.date} · turn ${scenario.turn}`
+                  : 'Not started',
             ],
-            ['Active faction', scenario?.activeSide ?? 'Not assigned'],
+            [
+              waterloo ? 'Shared phase' : 'Active faction',
+              waterloo?.phase ?? scenario?.activeSide ?? 'Not assigned',
+            ],
             [
               'Siege status',
-              scenario?.aftermath
-                ? `${scenario.settings.siege.progress} / ${scenario.aftermath.rules.siegeThreshold} · ${scenario.aftermath.conditions.supplied ? 'supply verified' : 'supply unverified'}`
-                : scenario
-                  ? `${scenario.settings.siege.status.replaceAll('_', ' ')} · proposed`
-                  : 'Not configured',
+              waterloo
+                ? waterloo.fontenoy
+                  ? `${waterloo.fontenoy.siege.status.replaceAll('_', ' ')} · progress ${waterloo.fontenoy.siege.progress}`
+                  : 'Not used in this scenario'
+                : scenario?.aftermath
+                  ? `${scenario.settings.siege.progress} / ${scenario.aftermath.rules.siegeThreshold} · ${scenario.aftermath.conditions.supplied ? 'supply verified' : 'supply unverified'}`
+                  : scenario
+                    ? `${scenario.settings.siege.status.replaceAll('_', ' ')} · proposed`
+                    : 'Not configured',
             ],
             [
               'Objectives',
-              scenario?.aftermath?.victory
-                ? `Outcome: ${scenario.aftermath.victory.winner}`
-                : scenario
-                  ? scenario.aftermath
-                    ? scenario.aftermath.conditions.relieved
-                      ? 'Relief verified'
-                      : scenario.aftermath.conditions.invested
-                        ? 'Tournai invested'
-                        : 'Investment unverified'
-                    : '2 proposed goals'
-                  : 'Not configured',
+              waterloo
+                ? waterloo.fontenoy
+                  ? 'Invest / relieve Tournai'
+                  : 'Reference tactical encounters'
+                : scenario?.aftermath?.victory
+                  ? `Outcome: ${scenario.aftermath.victory.winner}`
+                  : scenario
+                    ? scenario.aftermath
+                      ? scenario.aftermath.conditions.relieved
+                        ? 'Relief verified'
+                        : scenario.aftermath.conditions.invested
+                          ? 'Tournai invested'
+                          : 'Investment unverified'
+                      : '2 proposed goals'
+                    : 'Not configured',
             ],
             [
               'Unsaved changes',
               campaignPending
                 ? 'Operation pending'
-                : tabletopDraft
-                  ? tabletopDraft.kind === 'formation'
-                    ? 'Uncommitted formation split'
-                    : 'Uncommitted tabletop draft'
-                  : planningDraft
-                    ? 'Unissued orders'
-                    : setupDraft
-                      ? 'Uncommitted setup'
-                      : draft
-                        ? 'Uncommitted draft'
-                        : library?.active
-                          ? 'All changes saved'
-                          : 'None · no active campaign',
+                : waterlooDraft
+                  ? 'Uncommitted campaign draft'
+                  : tabletopDraft
+                    ? tabletopDraft.kind === 'formation'
+                      ? 'Uncommitted formation split'
+                      : 'Uncommitted tabletop draft'
+                    : planningDraft
+                      ? 'Unissued orders'
+                      : setupDraft
+                        ? 'Uncommitted setup'
+                        : draft
+                          ? 'Uncommitted draft'
+                          : library?.active
+                            ? 'All changes saved'
+                            : 'None · no active campaign',
             ],
           ].map(([label, value]) => (
             <div key={label}>
@@ -303,6 +327,8 @@ export function App() {
             </section>
           ) : screen === 'Dashboard' ? (
             <CampaignDashboard />
+          ) : waterloo && screen !== 'Settings' ? (
+            <WaterlooDesk campaign={waterloo} />
           ) : screen === 'Armies/Columns' ? (
             <FontenoySetup />
           ) : screen === 'Campaign Map' ? (
@@ -396,7 +422,15 @@ export function App() {
             campaign={library?.active ?? null}
             view={view}
             screen={screen}
-            hasDraft={!!(draft || setupDraft || planningDraft || tabletopDraft)}
+            hasDraft={
+              !!(
+                draft ||
+                setupDraft ||
+                planningDraft ||
+                tabletopDraft ||
+                waterlooDraft
+              )
+            }
             onNavigate={navigate}
             onDismiss={() => setHelpOpen(false)}
           />

@@ -1,3 +1,8 @@
+import {
+  canRebuildUnit,
+  unitRecoveryStrategies,
+  recoverUnit,
+} from './unit-recovery';
 import data from '../data/aftermath.v0.1.json' with { type: 'json' };
 import type { FontenoyCampaign } from './campaign';
 import type { Battle } from './tabletop-schema';
@@ -6,7 +11,6 @@ import {
   aftermathRulesSchema,
 } from './aftermath-schema';
 import type {
-  AftermathRules,
   AftermathReceipt,
   BattleAftermathInput,
 } from './aftermath-schema';
@@ -24,32 +28,8 @@ export const aftermathCategories = {
   'commander-status': 'commander_status_changed',
   'commander-attach': 'commander_attached',
 } as const;
-type Unit = FontenoyCampaign['units'][number];
-const regular = (unit: Unit) =>
-  unit.type === 'regular_infantry' || unit.type === 'regular_cavalry';
-function canRebuild(unit: Unit, rules: AftermathRules) {
-  return regular(unit)
-    ? rules.allowRegularRebuild
-    : unit.type === 'artillery'
-      ? rules.artilleryRecovery === 'same_quality'
-      : rules.irregularRecovery === 'same_quality';
-}
-// Replaceable pure policies. Neither strategy claims to implement official tactical losses.
-export const aftermathStrategies = {
-  conscript_rebuild_v1: (
-    unit: Unit,
-    rules: AftermathRules,
-    choice: 'recover' | 'lost',
-  ) => {
-    void choice;
-    return canRebuild(unit, rules) ? ('recover' as const) : ('lost' as const);
-  },
-  manual_review_v1: (
-    _unit: Unit,
-    _rules: AftermathRules,
-    choice: 'recover' | 'lost',
-  ) => choice,
-};
+const canRebuild = canRebuildUnit;
+export const aftermathStrategies = unitRecoveryStrategies;
 export function aftermathDraft(
   campaign: FontenoyCampaign,
   battle: Battle,
@@ -265,31 +245,15 @@ export function applyAftermathCommand(
       const unit = next.units.find((u) => u.id === result.unitId)!;
       const beforeStatus = unit.currentStatus;
       const beforeQuality = unit.quality;
-      let dueTurn: number | null = null;
-      if (result.outcome === 'broken') {
-        const choice = request.broken.find((r) => r.unitId === unit.id)!.action;
-        const action = aftermathStrategies[rules.strategy](unit, rules, choice);
-        if (action !== choice)
-          throw new Error(
-            'Broken-unit actions must match the selected strategy; use manual review for individual choices.',
-          );
-        if (action === 'recover') {
-          if (!canRebuild(unit, rules))
-            throw new Error(
-              'This unit cannot recover under the selected variant.',
-            );
-          unit.currentStatus = 'recovering';
-          dueTurn = next.turn + rules.recoveryTurns;
-          if (regular(unit)) {
-            unit.initialQuality ??=
-              unit.quality === 'elite' ? 'elite' : 'trained';
-            unit.quality = 'conscript';
-          }
-        } else unit.currentStatus = 'lost';
-      } else if (result.outcome === 'retired' && rules.retiredRestTurns > 0) {
-        unit.currentStatus = 'recovering';
-        dueTurn = next.turn + rules.retiredRestTurns;
-      }
+      const change = recoverUnit(
+        unit,
+        result.outcome,
+        request.broken.find((r) => r.unitId === unit.id)?.action ?? null,
+        rules,
+      );
+      Object.assign(unit, change.unit);
+      const dueTurn =
+        change.delayTurns === null ? null : next.turn + change.delayTurns;
       if (dueTurn !== null)
         state.recoveries.push({
           unitId: unit.id,

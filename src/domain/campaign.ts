@@ -1,4 +1,9 @@
 import { z } from 'zod';
+import {
+  waterlooCampaignSchema,
+  waterlooReceiptSchema,
+} from './waterloo-schema';
+import { applyWaterlooCommand } from './waterloo';
 import { jsonEqual } from './json-equal';
 import { aftermathSchema, aftermathReceiptSchema } from './aftermath-schema';
 import {
@@ -219,6 +224,7 @@ export const fontenoyCampaignSchema = configuredBase.superRefine(
 export const campaignSchema = z.discriminatedUnion('schemaVersion', [
   legacy.campaignSchema,
   fontenoyCampaignSchema,
+  waterlooCampaignSchema,
 ]);
 export type Campaign = z.infer<typeof campaignSchema>;
 export const campaignEventSchema = legacy.campaignEventSchema.extend({
@@ -251,12 +257,20 @@ export const campaignEventSchema = legacy.campaignEventSchema.extend({
     'commander_arrived',
     'commander_status_changed',
     'commander_attached',
+    'waterloo_action',
+    'simultaneous_action',
   ]),
-  rulesetVersion: z.enum(['unconfigured', 'house_rule_v0.1']),
+  rulesetVersion: z.enum([
+    'unconfigured',
+    'house_rule_v0.1',
+    'waterloo_simultaneous_v0.1',
+    'maurice_operational_v0.1',
+  ]),
   before: campaignSchema.nullable(),
   after: campaignSchema,
   tabletopAction: tabletopReceiptSchema.optional(),
   aftermathAction: aftermathReceiptSchema.optional(),
+  waterlooAction: waterlooReceiptSchema.optional(),
 });
 export type CampaignEvent = z.infer<typeof campaignEventSchema>;
 const currentExportSchema = z
@@ -274,6 +288,13 @@ const currentExportSchema = z
     for (const [index, event] of value.events.entries()) {
       const issue = (message: string) =>
         ctx.addIssue({ code: 'custom', path: ['events', index], message });
+      if (
+        ['waterloo_action', 'simultaneous_action'].includes(event.category) !==
+        !!event.waterlooAction
+      )
+        issue(
+          'Only simultaneous operational actions require their command receipt.',
+        );
       const tabletopKind = (
         Object.keys(tabletopCategories) as (keyof typeof tabletopCategories)[]
       ).find((kind) => tabletopCategories[kind] === event.category);
@@ -329,6 +350,26 @@ const currentExportSchema = z
         };
         if (event.category === 'renamed') expected.title = event.after.title;
         if (event.category === 'archived') expected.status = 'archived';
+        if (
+          ['waterloo_action', 'simultaneous_action'].includes(event.category)
+        ) {
+          try {
+            if (
+              previous.schemaVersion !== 3 ||
+              event.after.schemaVersion !== 3 ||
+              !event.waterlooAction ||
+              event.waterlooAction.timestamp !== event.timestamp
+            )
+              throw new Error('Invalid Waterloo receipt.');
+            expected = {
+              ...applyWaterlooCommand(previous, event.waterlooAction),
+              revision: event.after.revision,
+              updatedAt: event.timestamp,
+            };
+          } catch {
+            issue('Waterloo action cannot be replayed.');
+          }
+        }
         if (event.category === 'scenario_loaded') {
           if (
             previous.schemaVersion !== 1 ||

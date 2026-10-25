@@ -1,5 +1,15 @@
 import { DatabaseSync } from 'node:sqlite';
 import { randomUUID } from 'node:crypto';
+import { seedWaterloo, applyWaterlooCommand } from '../../domain/waterloo';
+import {
+  seedFontenoyOperational,
+  cloneFontenoyOperational,
+} from '../../domain/fontenoy-operational';
+import { cloneCampaignSchema } from '../../shared/campaign-contracts';
+import type { CloneCampaignInput } from '../../shared/campaign-contracts';
+import type { WaterlooReceipt } from '../../domain/waterloo-schema';
+import { waterlooInputSchema } from '../../shared/campaign-contracts';
+import type { WaterlooInput } from '../../shared/campaign-contracts';
 import {
   campaignSchema,
   campaignEventSchema,
@@ -52,6 +62,8 @@ import {
 } from '../../domain/operations';
 
 export interface CampaignRepository {
+  createWaterloo(input: CreateCampaignInput): CampaignLibrary;
+  waterloo(input: WaterlooInput): CampaignLibrary;
   aftermath(input: AftermathInput): CampaignLibrary;
   tabletop(input: TabletopInput): CampaignLibrary;
   operate(input: OperationalInput): CampaignLibrary;
@@ -61,7 +73,7 @@ export interface CampaignRepository {
   library(): CampaignLibrary;
   create(input: CreateCampaignInput): CampaignLibrary;
   rename(input: RenameCampaignInput): CampaignLibrary;
-  clone(input: RenameCampaignInput): CampaignLibrary;
+  clone(input: CloneCampaignInput): CampaignLibrary;
   archive(input: ArchiveCampaignInput): CampaignLibrary;
   open(id: string): CampaignLibrary;
   importCampaign(input: unknown): CampaignLibrary;
@@ -90,6 +102,64 @@ export class SqliteCampaignRepository implements CampaignRepository {
   }
   close() {
     this.db.close();
+  }
+  createWaterloo(input: CreateCampaignInput): CampaignLibrary {
+    const request = createCampaignSchema.parse(input);
+    return this.transaction(() => {
+      this.save(
+        null,
+        seedWaterloo(request.title, randomUUID, new Date().toISOString()),
+        'created',
+        request.actor,
+        request.reason,
+      );
+      return this.librarySnapshot();
+    });
+  }
+  waterloo(input: WaterlooInput): CampaignLibrary {
+    const request = waterlooInputSchema.parse(input);
+    return this.transaction(() => {
+      const before = this.current(request);
+      if (before.schemaVersion !== 3)
+        throw new CampaignError(
+          'validation',
+          'Open a simultaneous hex campaign.',
+        );
+      const stamp = this.next(before);
+      const receipt: WaterlooReceipt = {
+        command: request.command,
+        recordId: randomUUID(),
+        timestamp: stamp.updatedAt,
+      };
+      let changed;
+      try {
+        changed = applyWaterlooCommand(before, receipt);
+      } catch (error) {
+        throw new CampaignError(
+          'validation',
+          error instanceof Error ? error.message : 'Campaign action rejected.',
+        );
+      }
+      const after = campaignSchema.parse({
+        ...changed,
+        revision: stamp.revision,
+        updatedAt: stamp.updatedAt,
+      });
+      this.save(
+        before,
+        after,
+        before.moduleId === 'fontenoy-operational'
+          ? 'simultaneous_action'
+          : 'waterloo_action',
+        request.actor,
+        request.reason,
+        null,
+        undefined,
+        undefined,
+        receipt,
+      );
+      return this.librarySnapshot();
+    });
   }
   aftermath(input: AftermathInput): CampaignLibrary {
     const request = aftermathInputSchema.parse(input);
@@ -302,6 +372,7 @@ export class SqliteCampaignRepository implements CampaignRepository {
     sourceCampaignId: string | null = null,
     tabletopAction?: TabletopReceipt,
     aftermathAction?: AftermathReceipt,
+    waterlooAction?: WaterlooReceipt,
   ) {
     campaignSchema.parse(after);
     const event = campaignEventSchema.parse({
@@ -317,6 +388,7 @@ export class SqliteCampaignRepository implements CampaignRepository {
       after,
       ...(tabletopAction ? { tabletopAction } : {}),
       ...(aftermathAction ? { aftermathAction } : {}),
+      ...(waterlooAction ? { waterlooAction } : {}),
     });
     if (before) {
       const result = this.db
@@ -363,6 +435,16 @@ export class SqliteCampaignRepository implements CampaignRepository {
     const request = createCampaignSchema.parse(input);
     return this.transaction(() => {
       const now = new Date().toISOString();
+      if (request.profile === 'simultaneous_fontenoy') {
+        this.save(
+          null,
+          seedFontenoyOperational(request.title, randomUUID, now),
+          'created',
+          request.actor,
+          request.reason,
+        );
+        return this.librarySnapshot();
+      }
       const campaign: Campaign = {
         id: randomUUID(),
         schemaVersion: 1,
@@ -419,10 +501,61 @@ export class SqliteCampaignRepository implements CampaignRepository {
       return this.librarySnapshot();
     });
   }
-  clone(input: RenameCampaignInput): CampaignLibrary {
-    const request = renameCampaignSchema.parse(input);
+  clone(input: CloneCampaignInput): CampaignLibrary {
+    const request = cloneCampaignSchema.parse(input);
     return this.transaction(() => {
       const source = this.current(request);
+      if (request.profile === 'simultaneous_fontenoy') {
+        if (source.schemaVersion !== 2)
+          throw new CampaignError(
+            'validation',
+            'Open a saved Fontenoy setup to make its simultaneous operational copy.',
+          );
+        let after;
+        try {
+          after = seedFontenoyOperational(
+            request.title,
+            randomUUID,
+            new Date().toISOString(),
+            source,
+          );
+        } catch (error) {
+          throw new CampaignError(
+            'validation',
+            error instanceof Error
+              ? error.message
+              : 'Review the Fontenoy setup.',
+          );
+        }
+        this.save(
+          null,
+          after,
+          'cloned',
+          request.actor,
+          request.reason,
+          source.id,
+        );
+        return this.librarySnapshot();
+      }
+      if (source.schemaVersion === 3) {
+        const after = source.fontenoy
+          ? cloneFontenoyOperational(
+              source,
+              request.title,
+              randomUUID,
+              new Date().toISOString(),
+            )
+          : seedWaterloo(request.title, randomUUID, new Date().toISOString());
+        this.save(
+          null,
+          after,
+          'cloned',
+          request.actor,
+          request.reason,
+          source.id,
+        );
+        return this.librarySnapshot();
+      }
       const ids = new Map<string, string>();
       for (const records of [
         source.factions,

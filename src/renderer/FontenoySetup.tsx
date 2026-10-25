@@ -14,6 +14,8 @@ import { SchematicMap } from './SchematicMap';
 export function FontenoySetup() {
   const state = useCampaigns();
   const active = state.library?.active;
+  if (active?.schemaVersion === 3)
+    return <p>Use the simultaneous campaign map to manage this scenario.</p>;
   if (!active)
     return (
       <section className="panel settings">

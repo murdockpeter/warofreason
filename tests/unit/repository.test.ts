@@ -269,7 +269,7 @@ describe('SQLite repository', () => {
     expect(repo.library()).toEqual(inProgress);
     action({ kind: 'record-result', battleId: battle.id, result });
     const confirmed = repo.library();
-    expect(confirmed.active!.units).toEqual(c.units);
+    expect((confirmed.active! as FontenoyCampaign).units).toEqual(c.units);
     expect(confirmed.events.at(-1)!.tabletopAction?.command.kind).toBe(
       'record-result',
     );
@@ -374,7 +374,9 @@ describe('SQLite repository', () => {
     expect((issued.active as FontenoyCampaign).operations!.orders).toEqual([
       order,
     ]);
-    expect(issued.active!.columns).toEqual(current.columns);
+    expect((issued.active! as FontenoyCampaign).columns).toEqual(
+      current.columns,
+    );
     expect(() =>
       repo.operate({
         id: campaign.id,
@@ -390,7 +392,9 @@ describe('SQLite repository', () => {
       ...audit,
       command: { kind: 'resolve' },
     });
-    expect(resolved.active!.columns[0]!.squareId).toBe(order.path[1]);
+    expect((resolved.active! as FontenoyCampaign).columns[0]!.squareId).toBe(
+      order.path[1],
+    );
     expect(resolved.events.at(-1)!.reason).toContain(
       'house_rule_v0.1/operations-1',
     );
@@ -400,9 +404,10 @@ describe('SQLite repository', () => {
     });
     const destination = new SqliteCampaignRepository(':memory:');
     try {
-      expect(destination.importCampaign(portable).active!.columns).toEqual(
-        resolved.active!.columns,
-      );
+      expect(
+        (destination.importCampaign(portable).active! as FontenoyCampaign)
+          .columns,
+      ).toEqual((resolved.active! as FontenoyCampaign).columns);
       const cloned = destination.clone({
         id: campaign.id,
         expectedRevision: 7,
@@ -415,7 +420,8 @@ describe('SQLite repository', () => {
       destination.close();
     }
     const forged = structuredClone(portable);
-    forged.events.at(-1)!.after.columns[0]!.squareId = current.squares[0]!.id;
+    (forged.events.at(-1)!.after as FontenoyCampaign).columns[0]!.squareId =
+      current.squares[0]!.id;
     expect(exportSchema.safeParse(forged).success).toBe(false);
   });
   it('upgrades a legacy empty draft explicitly without replacing identity or old journal snapshots', () => {
@@ -436,7 +442,7 @@ describe('SQLite repository', () => {
     expect(after.active?.title).toBe(legacy.title);
     expect(after.active?.seed).toBe(legacy.seed);
     expect(after.active?.schemaVersion).toBe(2);
-    expect(after.active?.units).toHaveLength(38);
+    expect((after.active as FontenoyCampaign).units).toHaveLength(38);
     expect(after.events.slice(0, -1)).toEqual(before.events);
     expect(after.events.at(-1)?.category).toBe('scenario_loaded');
     restart();
@@ -601,12 +607,15 @@ describe('SQLite repository', () => {
   it('clones all aggregate IDs and references without altering the source history', () => {
     repo.importCampaign(exportFixture());
     const source = repo.library().active!;
+    if (source.schemaVersion === 3)
+      throw new Error('Expected legacy campaign.');
     const copy = repo.clone({
       id: source.id,
       expectedRevision: source.revision,
       title: 'Independent copy',
       ...audit,
     }).active!;
+    if (copy.schemaVersion === 3) throw new Error('Expected legacy clone.');
     expect(copy.id).not.toBe(source.id);
     expect(copy.seed).not.toBe(source.seed);
     expect(copy.units[0]!.id).not.toBe(source.units[0]!.id);

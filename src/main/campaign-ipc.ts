@@ -16,6 +16,8 @@ import {
   tabletopInputSchema,
   aftermathInputSchema,
   battleDocumentInputSchema,
+  waterlooInputSchema,
+  cloneCampaignSchema,
 } from '../shared/campaign-contracts';
 import { CampaignError, validationMessage } from './persistence/errors';
 import type { CampaignRepository } from './persistence/repository';
@@ -28,6 +30,8 @@ import { projectOperationalView } from '../domain/operations';
 import { applyTabletopCommand } from '../domain/tabletop';
 import { applyAftermathCommand } from '../domain/aftermath';
 import { battleBriefHtml } from '../domain/battle-brief';
+import { waterlooBriefHtml } from '../domain/waterloo-brief';
+import { applyWaterlooCommand } from '../domain/waterloo';
 import { writeAtomicFile } from './persistence/files';
 
 export function registerCampaignIpc(
@@ -87,6 +91,64 @@ export function registerCampaignIpc(
     });
   }
   handle(campaignChannels.library, noInput, () => repository.library());
+  handle(campaignChannels.waterlooCreate, createCampaignSchema, (input) =>
+    repository.createWaterloo(input),
+  );
+  handle(
+    campaignChannels.waterlooAction,
+    waterlooInputSchema,
+    async (input) => {
+      if (
+        [
+          'resolve',
+          'result',
+          'approve-result',
+          'finalize',
+          'reset-orders',
+          'return-corps',
+          'enable-preparation',
+          'resolve-withdrawals',
+          'maurice-recovery-policy',
+          'reset-withdrawals',
+        ].includes(input.command.kind)
+      ) {
+        const current = repository.exportCampaign({
+          id: input.id,
+          expectedRevision: input.expectedRevision,
+        }).campaign;
+        if (current.schemaVersion !== 3)
+          throw new CampaignError(
+            'validation',
+            'Open a simultaneous campaign.',
+          );
+        try {
+          applyWaterlooCommand(current, {
+            command: input.command,
+            recordId: randomUUID(),
+            timestamp: new Date().toISOString(),
+          });
+        } catch (error) {
+          throw new CampaignError(
+            'validation',
+            error instanceof Error ? error.message : 'Invalid campaign action.',
+          );
+        }
+        const response = await dialog.showMessageBox(parent(), {
+          type: 'question',
+          title: 'Confirm campaign action?',
+          message: `Confirm ${input.command.kind.replaceAll('-', ' ')}?`,
+          detail:
+            'The reviewed action is saved with a replayable campaign journal entry. Tactical results are entered manually.',
+          buttons: ['Keep reviewing', 'Confirm campaign action'],
+          defaultId: 0,
+          cancelId: 0,
+          noLink: true,
+        });
+        if (response.response !== 1) return repository.library();
+      }
+      return repository.waterloo(input);
+    },
+  );
   handle(campaignChannels.aftermath, aftermathInputSchema, async (input) => {
     if (
       ['apply-battle', 'finalize-turn', 'commander-status'].includes(
@@ -182,8 +244,10 @@ export function registerCampaignIpc(
       const ref = { id: input.id, expectedRevision: input.expectedRevision };
       const initial = repository.exportCampaign(ref).campaign;
       if (
-        initial.schemaVersion !== 2 ||
-        !initial.tabletop?.battles.some((b) => b.id === input.battleId)
+        !(initial.schemaVersion === 3
+          ? initial.battles.some((b) => b.id === input.battleId)
+          : initial.schemaVersion === 2 &&
+            initial.tabletop?.battles.some((b) => b.id === input.battleId))
       )
         throw new CampaignError('validation', 'Choose a saved battle brief.');
       const selected = await dialog.showSaveDialog(parent(), {
@@ -203,15 +267,21 @@ export function registerCampaignIpc(
           `Save the brief with a .${input.format} extension.`,
         );
       const current = repository.exportCampaign(ref).campaign;
-      if (current.schemaVersion !== 2)
+      if (current.schemaVersion === 1)
         throw new CampaignError(
           'validation',
           'Campaign changed; reload before exporting.',
         );
-      const battle = current.tabletop!.battles.find(
-        (b) => b.id === input.battleId,
-      )!;
-      const html = battleBriefHtml(current, battle);
+      const html =
+        current.schemaVersion === 3
+          ? waterlooBriefHtml(
+              current,
+              current.battles.find((b) => b.id === input.battleId)!,
+            )
+          : battleBriefHtml(
+              current,
+              current.tabletop!.battles.find((b) => b.id === input.battleId)!,
+            );
       if (input.format === 'html') writeAtomicFile(selected.filePath, html);
       else {
         const printWindow = new BrowserWindow({
@@ -324,7 +394,7 @@ export function registerCampaignIpc(
   handle(campaignChannels.rename, renameCampaignSchema, (input) =>
     repository.rename(input),
   );
-  handle(campaignChannels.clone, renameCampaignSchema, (input) =>
+  handle(campaignChannels.clone, cloneCampaignSchema, (input) =>
     repository.clone(input),
   );
   handle(campaignChannels.open, campaignRefSchema, (input) =>

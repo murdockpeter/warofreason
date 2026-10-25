@@ -93,7 +93,7 @@ for (const packaged of [false, true]) {
         );
         if (!result.ok || result.value.active?.schemaVersion !== 2)
           throw new Error('Expected started Fontenoy.');
-        return result.value;
+        return { ...result.value, active: result.value.active };
       };
       await navigateTo(page, 'Campaign Map');
       await page

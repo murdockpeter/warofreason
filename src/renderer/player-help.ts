@@ -139,6 +139,32 @@ export function nextPlayerStep(
       text: 'You can inspect or back it up. Clone it from Dashboard to prepare a fresh setup.',
       screen: 'Dashboard',
     };
+  if (
+    campaign.schemaVersion === 3 &&
+    campaign.preparation &&
+    !campaign.preparation.resolved
+  )
+    return {
+      title: 'Complete screening and withdrawals',
+      text: 'Deploy or recall screens before withdrawal planning. Each side then saves and locks its withdrawals, including an empty hold. The umpire reviews and confirms their simultaneous resolution before movement orders open.',
+      screen: 'Campaign Map',
+    };
+  if (campaign.schemaVersion === 3)
+    return {
+      title:
+        campaign.phase === 'adjudication'
+          ? 'Review contacts and tactical battles'
+          : campaign.phase === 'checkpoint'
+            ? 'Finish the shared phase'
+            : 'Plan and lock both sides’ orders',
+      text:
+        campaign.phase === 'adjudication'
+          ? 'In umpire view, settle contacts or declare a battle, review likely reinforcements, enter the tactical result and approve campaign effects before resuming movement.'
+          : campaign.phase === 'checkpoint'
+            ? 'Movement and required battle reviews are complete. Finish the shared phase to open the next AM/PM planning window and process any due Maurice unit recoveries when enabled.'
+            : 'Select a friendly corps and adjacent hexes, save up to three movement segments, then lock each side. Neither side moves before simultaneous resolution.',
+      screen: 'Campaign Map',
+    };
   if (campaign.schemaVersion !== 2 || campaign.status === 'draft')
     return {
       title: 'Review your campaign setup',

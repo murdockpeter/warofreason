@@ -78,7 +78,7 @@ for (const packaged of [false, true]) {
         );
         if (!result.ok || result.value.active?.schemaVersion !== 2)
           throw new Error('Expected campaign.');
-        return result.value;
+        return { ...result.value, active: result.value.active };
       };
       expect((await snapshot()).active!.columns).toHaveLength(4);
       await source().focus();

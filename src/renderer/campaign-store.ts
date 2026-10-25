@@ -19,6 +19,36 @@ import { tabletopCommandSchema } from '../domain/tabletop-schema';
 import type { TabletopCommand } from '../domain/tabletop-schema';
 import { aftermathCommandSchema } from '../domain/aftermath-schema';
 import type { AftermathCommand } from '../domain/aftermath-schema';
+import type {
+  WaterlooCommand,
+  WaterlooResult,
+} from '../domain/waterloo-schema';
+import type { SimultaneousRecoveryPolicy } from '../domain/simultaneous-aftermath-schema';
+
+export type WaterlooDraft =
+  | { kind: 'recovery-policy'; policy: SimultaneousRecoveryPolicy }
+  | {
+      kind: 'withdrawal';
+      corpsId: string;
+      enemyId: string;
+      path: string[];
+      priority: number;
+      blocked?: boolean;
+    }
+  | {
+      kind: 'route';
+      corpsId: string;
+      path: string[];
+      roadOnly: boolean;
+      startAt: number;
+      hqId: string;
+    }
+  | {
+      kind: 'result';
+      battleId: string;
+      result: WaterlooResult;
+      reason: string;
+    };
 
 type DraftFields = { title: string; actor: string; reason: string };
 export type CampaignDraft = DraftFields & {
@@ -28,6 +58,10 @@ export type CampaignDraft = DraftFields & {
   history: DraftFields[];
 };
 interface CampaignSession {
+  waterlooDraft: WaterlooDraft | null;
+  createFontenoyOperations(): Promise<void>;
+  copyFontenoyOperations(): Promise<void>;
+  commitWaterloo(command: WaterlooCommand): Promise<void>;
   commitAftermath(command: AftermathCommand): Promise<void>;
   tabletopDraft: TabletopDraft | null;
   beginTabletop(draft: TabletopDraft): Promise<void>;
@@ -69,6 +103,7 @@ export const useCampaigns = create<CampaignSession>((set, get) => {
   async function allowDiscard(): Promise<boolean> {
     if (
       !get().draft &&
+      !get().waterlooDraft &&
       !get().setupDraft &&
       !get().planningDraft &&
       !get().tabletopDraft
@@ -79,6 +114,7 @@ export const useCampaigns = create<CampaignSession>((set, get) => {
       if (!(await window.desktop.confirmDiscardDraft())) return false;
       set({
         draft: null,
+        waterlooDraft: null,
         setupDraft: null,
         setupHistory: [],
         planningDraft: null,
@@ -104,6 +140,7 @@ export const useCampaigns = create<CampaignSession>((set, get) => {
           ...(clearDraft
             ? {
                 draft: null,
+                waterlooDraft: null,
                 setupDraft: null,
                 setupHistory: [],
                 planningDraft: null,
@@ -134,6 +171,49 @@ export const useCampaigns = create<CampaignSession>((set, get) => {
     }
   }
   return {
+    waterlooDraft: null,
+    async createFontenoyOperations() {
+      await guarded(() =>
+        window.desktop.createCampaign({
+          title: 'The Road to Fontenoy, 1745 — simultaneous operations',
+          profile: 'simultaneous_fontenoy',
+          actor: 'Local player',
+          reason:
+            'Created a Maurice Fontenoy campaign with simultaneous operational play and manually adjudicated battles.',
+        }),
+      );
+    },
+    async copyFontenoyOperations() {
+      const active = get().library?.active;
+      if (active?.schemaVersion !== 2) return;
+      await guarded(() =>
+        window.desktop.cloneCampaign({
+          id: active.id,
+          expectedRevision: active.revision,
+          title: `${active.title.slice(0, 90)} — simultaneous`,
+          profile: 'simultaneous_fontenoy',
+          actor: 'Local player',
+          reason:
+            'Created a fresh simultaneous Maurice campaign from the saved Fontenoy forces, geography and objectives; the source campaign is unchanged.',
+        }),
+      );
+    },
+    async commitWaterloo(command) {
+      const active = get().library?.active;
+      if (active?.schemaVersion !== 3) return;
+      const revision = active.revision;
+      await perform(() =>
+        window.desktop.commitWaterlooAction({
+          id: active.id,
+          expectedRevision: revision,
+          actor: 'Local umpire',
+          reason: `Reviewed ${command.kind} under simultaneous campaign rules.`,
+          command,
+        }),
+      );
+      if (get().library?.active?.revision !== revision)
+        set({ waterlooDraft: null });
+    },
     tabletopDraft: null,
     async beginTabletop(draft) {
       if (get().pending || get().loading) return;

@@ -6,7 +6,10 @@ import { ErrorBoundary } from '../../src/renderer/ErrorBoundary';
 import { screens, useSession } from '../../src/renderer/session';
 import { useCampaigns } from '../../src/renderer/campaign-store';
 import { campaignFixture, exportFixture } from '../fixtures/campaign';
-import type { CampaignLibrary } from '../../src/domain/campaign';
+import type {
+  CampaignLibrary,
+  FontenoyCampaign,
+} from '../../src/domain/campaign';
 import { seedFontenoy } from '../../src/domain/fontenoy';
 import { useOperationalSession } from '../../src/renderer/operational-session';
 import {
@@ -54,6 +57,8 @@ beforeEach(() => {
     setupHistory: [],
   });
   window.desktop = {
+    createWaterlooCampaign: vi.fn(),
+    commitWaterlooAction: vi.fn(),
     commitAftermathAction: vi
       .fn()
       .mockResolvedValue({ ok: true, value: savedLibrary() }),
@@ -186,7 +191,10 @@ describe('desktop skeleton', () => {
     expect(
       screen.getByRole('region', { name: 'Confirmed tabletop result' }),
     ).toHaveTextContent('draw');
-    expect(useCampaigns.getState().library?.active?.units).toEqual(c.units);
+    expect(
+      (useCampaigns.getState().library?.active as FontenoyCampaign | null)
+        ?.units,
+    ).toEqual(c.units);
   });
   it.each(['draft', 'active', 'archived'] as const)(
     'handles review confirmations directly for a %s campaign',
@@ -223,9 +231,10 @@ describe('desktop skeleton', () => {
       expect(
         useCampaigns.getState().setupDraft?.settings.reviewedHouseRules,
       ).toBe(true);
-      expect(useCampaigns.getState().library?.active?.settings).toEqual(
-        campaign.settings,
-      );
+      expect(
+        (useCampaigns.getState().library?.active as FontenoyCampaign | null)
+          ?.settings,
+      ).toEqual(campaign.settings);
       expect(window.desktop.saveCampaignSetup).not.toHaveBeenCalled();
       expect(
         screen.getByRole('button', { name: 'Start Campaign' }),
@@ -349,7 +358,10 @@ describe('desktop skeleton', () => {
       ).toBeEnabled(),
     );
     expect(window.desktop.saveCampaignSetup).toHaveBeenCalledOnce();
-    expect(useCampaigns.getState().library?.active?.units).toHaveLength(38);
+    expect(
+      (useCampaigns.getState().library?.active as FontenoyCampaign | null)
+        ?.units,
+    ).toHaveLength(38);
   });
   it('navigates all seven screens and keeps honest campaign status visible', async () => {
     render(<App />);
