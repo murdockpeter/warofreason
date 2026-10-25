@@ -1,5 +1,9 @@
 # Running implementation checklist
 
+## New operational direction — 2026-10-25
+
+The Waterloo-based adaptation now has a separate [rules/repository review](WATERLOO_RULES_REVIEW.md) and [implementation TODO](WATERLOO_TODO.md). Its agreed scope includes simultaneous movement, externally resolved tactical battles with editable manual results, likely reinforcement arrival windows and original replacement charts. These documents plan future work; the completed implementation history below remains unchanged.
+
 Milestones A–F are complete. The user has now requested a map-first interface simplification increment before G. Further interface refinement and human playtesting remain ongoing work.
 
 ## Phase map refresh verification — 2026-10-22
