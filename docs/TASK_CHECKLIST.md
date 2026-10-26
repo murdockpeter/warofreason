@@ -1,5 +1,14 @@
 # Running implementation checklist
 
+## CI cold-cache lockfile repair - 2026-10-26
+
+- [x] Read run 40376873001 and reproduce missing type-check 0.6.0; identify that previous clean-folder install still reused the global npm cache.
+- [x] Regenerate the complete lockfile from public-registry metadata with a fresh metadata cache, preserving all direct dependency pins. Correct nonexistent 0.6.0 references including type-check, asynckit, node-int64 and @malept/flatpak-bundler.
+- [x] Install all 550 packages with a separate empty download cache and Electron postinstall; npm ls --all reports a consistent fresh dependency tree.
+- [x] Use a fresh per-job cache for CI installs and disable setup-node package caching so cached tarballs cannot conceal invalid lock metadata.
+- [x] Validate the copied application against the newly installed dependencies: lint/typecheck, all 251 unit/integration tests, production build, Windows unpacked packaging, all 33 built/packaged Electron checks and offline development startup pass. Desktop/development checks run with CI=true; root formatting and whitespace checks pass.
+- [x] Record final evidence. Only lockfile, CI installation settings and validation documentation changed; direct dependency pins and application source are unchanged. New metadata/download caches and the validation source copy are under ignored test-results. Changes are local and ready for commit/push; a hosted green run is not claimed.
+
 ## GitHub Actions dependency install repair - 2026-10-26
 
 - [x] Read failed run 40373159672: npm ci ETARGET for retry ^0.6.0, separate from the Node 20 action warning.

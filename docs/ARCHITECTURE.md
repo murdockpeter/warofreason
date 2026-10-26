@@ -134,3 +134,13 @@ Fresh operational clones remap the reviewed baseline instead of copying later of
 ## GitHub Actions install repair (2026-10-26)
 
 Run 40373159672 failed during `npm ci`: the lockfile incorrectly declared `@humanwhocodes/retry@^0.6.0` under `@humanfs/node@0.16.8`. The published npm manifest requires `^0.4.0`; correcting that metadata and refreshing the lockfile kept dependency versions unchanged. A clean isolated `npm ci`, including Electron postinstall, installed 545 packages successfully. Separately, CI now pins checkout v7.0.1 and setup-node v7.1.0 commit SHAs, whose manifests use Node 24, and reads the application Node version from `.nvmrc`. These workflow changes take effect after push; no hosted rerun has been claimed.
+
+## CI cold-cache lockfile regeneration (2026-10-26)
+
+Run 40376873001 exposed another invalid resolved URL: type-check 0.6.0. The earlier isolated-directory install reused npm's global content-addressed cache; a cached tarball matching the integrity hash could conceal a nonexistent resolved URL. That earlier warm-cache check did not establish clean-runner reproducibility.
+
+Regenerate package-lock.json from the pinned package.json using public-registry metadata and a new metadata cache, then run npm ci with a separate empty download cache. The resulting lock corrects invalid 0.6.0 references for type-check, asynckit, node-int64 and @malept/flatpak-bundler, plus their dependent ranges. All direct dependency pins stay unchanged; compatible transitive versions/hoisting are re-resolved. The cold install downloads/installs 550 packages including Electron postinstall, and npm ls --all verifies a consistent installed tree.
+
+CI disables setup-node package caching and runs npm ci with a dedicated runner.temp cache, preventing restored tarballs from concealing future invalid lock metadata. Validate source copied into the isolated install against its actual new node_modules, including lint/typecheck, domain/UI tests, production build, Windows packaging and Electron checks. This avoids treating success against the workspace's older installed dependencies as evidence for the new lock. No hosted green run is claimed until the changes are committed/pushed and GitHub executes them.
+
+Cold-cache acceptance: the freshly installed dependency tree passes lint/typecheck, all 251 unit/integration tests, production build and Windows unpacked packaging, all 33 built/packaged Electron checks in CI mode, and offline development startup in CI mode. Root whole-project formatting and whitespace checks pass. Application source and direct dependency pins are unchanged. Validation files/caches are under ignored test-results; no player profile or private materials were changed and no commit/push/publish was performed.

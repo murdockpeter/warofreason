@@ -8,8 +8,9 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0 (Node 24)
         with:
           node-version-file: .nvmrc
-          cache: npm
-      - run: npm ci
+          package-manager-cache: false
+      - name: Install dependencies with a fresh cache
+        run: npm ci --cache "${{ runner.temp }}/maurice-npm-cache"
       - run: npm run format:check
       - run: npm run lint
       - run: npm run typecheck
