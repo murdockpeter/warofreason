@@ -1,3 +1,8 @@
+import type { OfficerAction } from '../domain/simultaneous-commanders-schema';
+import type {
+  SimultaneousSiegePolicy,
+  SiegeReview,
+} from '../domain/simultaneous-siege-schema';
 import { create } from 'zustand';
 import { fontenoyCampaignSchema } from '../domain/campaign';
 import type { CampaignLibrary, FontenoyCampaign } from '../domain/campaign';
@@ -26,6 +31,9 @@ import type {
 import type { SimultaneousRecoveryPolicy } from '../domain/simultaneous-aftermath-schema';
 
 export type WaterlooDraft =
+  | { kind: 'officer'; action: OfficerAction }
+  | { kind: 'siege-policy'; policy: SimultaneousSiegePolicy }
+  | { kind: 'siege-review'; review: SiegeReview }
   | { kind: 'recovery-policy'; policy: SimultaneousRecoveryPolicy }
   | {
       kind: 'withdrawal';

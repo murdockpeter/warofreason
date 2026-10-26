@@ -1,5 +1,33 @@
 # Running implementation checklist
 
+## Simultaneous commanders and Notables - 2026-10-26 / 0.11.0
+
+- [x] Review existing commander records, frozen briefs, legacy management and correction/clone boundaries.
+- [x] Add opt-in reviewed baseline, validated manual arrival/details/status/attachment commands and traceable officer history.
+- [x] Protect unresolved engagements, clear-planning attachments, faction ownership, inactive detachments, dependent corrections and baseline cloning.
+- [x] Add collapsed faction-safe management controls, guarded drafts and Helper mode guidance; leave card effects and HQ ratings manual.
+- [x] Validate domain invariants, frozen briefs, future active-officer snapshots, dependent correction guards, metadata-only attachment conservation, SQLite rollback/restart/replay/import/clone, renderer privacy/drafts and checkpoint Helper choices. All 235 unit/integration tests pass.
+- [x] All 31 built/packaged desktop checks pass. Both commander and helper walkthroughs pass again after final adjustments, including cancelled confirmations, draft navigation, arrival/attachment/retirement, checkpoint guidance, faction privacy, unchanged HQs/units, restart and portable history. Development offline launch passes. Typecheck, lint, whole-project formatting, production build and Windows unpacked packaging pass; packaged commander panel visually inspected.
+- [x] Document acceptance evidence and remaining optional Epic Point/scouting integration. Only the focused commander/Notable increment is complete. Tests used isolated profiles; no player saves/private materials changed and no commit/push/publish performed. Card effects, tactical officer outcomes and HQ ratings remain manually adjudicated.
+
+## Player helper mode - 2026-10-26 / 0.10.1
+
+- [x] Add an on-by-default, locally remembered helper toggle and contextual next-choice panel, separate from campaign mechanics and saves.
+- [x] Guide planning sides, move/hold, locks/waiting, preparation, contact/battle entry/approval/resolution, siege/finalization, completed campaigns, legacy setup/play and unfinished drafts.
+- [x] Reveal collapsed controls, highlight and keyboard-focus the requested area without clicking, committing or switching faction view automatically.
+- [x] Verify privacy, draft preservation, guidance transitions, no automatic actions, local preference persistence and actual built/packaged workflows. New desktop walkthroughs cover initial library guidance, map navigation/friendly-counter focus, move draft cancellation, hold/side/lock/resolution transitions, native cancellation, waiting views and preference retention through restart. Packaged helper panel visually inspected.
+- [x] Complete validation: all 217 unit/integration tests and all 29 built/packaged Electron checks pass. Development startup/navigation/style check passes offline; typecheck, lint, whole-project formatting, production build and Windows unpacked packaging pass. No campaign mechanics, player saves or private materials changed; tests used isolated profiles. No commit/push/publish performed. Next campaign integration block remains commander/Notable management, optional Epic Points and scouting/intelligence.
+
+## Simultaneous Tournai siege and victory - 2026-10-26 / 0.10.0
+
+- [x] Review the complete original plan, current operational TODO and existing siege/victory workflow.
+- [x] Add opt-in siege policy, explicit calendar cadence/deadline, checkpoint-only manual conditions/exhaustion and immutable explanations.
+- [x] Reuse the existing siege/victory evaluator, accumulate only attested eligible time, preview/apply checkpoint effects and lock concluded campaigns.
+- [x] Add compact Tournai controls, guarded drafts, recorded history and contextual Help without inferred supply/relief or tactical adjudication.
+- [x] Validate timing, supply interruption, relief, deadline/conflicting outcomes, frozen history, persistence/replay/import/clone, concluding unit recovery and legacy compatibility: 209 unit/integration tests pass. All 27 desktop checks pass.
+- [x] Validate built/packaged Electron workflows and development launch: all 27 desktop checks pass, including cancelled policy/review/finalization confirmations, retained drafts, restart, concluded campaign locking and portable outcome replay. Both new walkthroughs pass again after scoped styling; packaged Tournai panel visually inspected. Development offline startup check passes. Typecheck, lint, formatting, production build and Windows unpacked packaging pass.
+- [x] Record completion evidence and identify the next TODO block: commander/Notable management, optional Epic Points and scouting/intelligence integration. Tests used isolated temporary profiles; no player saves changed and no commit/push/publish performed. Siege timing, supply/relief and victory remain provisional house rules; human playtesting is still pending.
+
 ## Simultaneous Maurice unit aftermath — 2026-10-25 / 0.9.0
 
 - [x] Explicit opt-in policy with source-cadence calendar conversion, shared regular/irregular/artillery recovery strategies and fixed scheduled dates.

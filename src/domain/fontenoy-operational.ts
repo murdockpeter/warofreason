@@ -208,9 +208,9 @@ export function cloneFontenoyOperational(
       .map((f) => [f.id, uuid()]),
   );
   const unitIds = new Map(source.fontenoy.units.map((u) => [u.id, uuid()]));
-  const commanderIds = new Map(
-    source.fontenoy.commanders.map((u) => [u.id, uuid()]),
-  );
+  const openingCommanders =
+    source.fontenoy.officers?.baseline ?? source.fontenoy.commanders;
+  const commanderIds = new Map(openingCommanders.map((u) => [u.id, uuid()]));
   const factionIds = new Map(
     source.fontenoy.factions.map((u) => [u.id, uuid()]),
   );
@@ -254,7 +254,7 @@ export function cloneFontenoyOperational(
       delete copy.initialQuality;
       return copy;
     }),
-    commanders: source.fontenoy.commanders.map((u) => ({
+    commanders: openingCommanders.map((u) => ({
       ...u,
       id: commanderIds.get(u.id)!,
       factionId: factionIds.get(u.factionId)!,
@@ -263,9 +263,22 @@ export function cloneFontenoyOperational(
       ...f,
       corpsId: ids.get(f.corpsId)!,
       unitIds: f.unitIds.map((id) => unitIds.get(id)!),
-      commanderIds: f.commanderIds.map((id) => commanderIds.get(id)!),
+      commanderIds: (source.fontenoy!.officers
+        ? source
+            .fontenoy!.officers.assignments.filter(
+              (a) => a.corpsId === f.corpsId,
+            )
+            .map((a) => a.commanderId)
+        : f.commanderIds
+      ).map((id) => commanderIds.get(id)!),
     })),
   };
+  delete fresh.fontenoy.officers;
   delete fresh.fontenoy.aftermath;
+  delete fresh.fontenoy.siege.campaign;
+  if (source.fontenoy.siege.campaign) {
+    fresh.fontenoy.siege.progress = 0;
+    fresh.fontenoy.siege.status = 'not_started';
+  }
   return waterlooCampaignSchema.parse(fresh);
 }

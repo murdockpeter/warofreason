@@ -18,14 +18,21 @@ export function WaterlooPreparation({
 }) {
   const state = useCampaigns(),
     p = c.preparation,
-    busy = state.pending || c.status === 'archived';
+    busy =
+      state.pending ||
+      c.status === 'archived' ||
+      !!c.fontenoy?.siege.campaign?.victory;
   const alliedLabel = c.fontenoy ? 'Allied' : 'Coalition';
   const commit = (command: Parameters<typeof state.commitWaterloo>[0]) => {
     void state.commitWaterloo(command);
   };
   if (!p)
     return (
-      <section className="panel" aria-label="Preparation rules">
+      <section
+        className="panel"
+        data-helper="preparation"
+        aria-label="Preparation rules"
+      >
         <h2>Screening and withdrawal</h2>
         <p>
           Enable stationary screening detachments and simultaneous pre-movement
@@ -81,7 +88,11 @@ export function WaterlooPreparation({
     }
   }
   return (
-    <section className="panel" aria-label="Preparation rules">
+    <section
+      className="panel"
+      data-helper="preparation"
+      aria-label="Preparation rules"
+    >
       <div className="section-heading">
         <h2>Screening and withdrawal</h2>
         <span className="badge">

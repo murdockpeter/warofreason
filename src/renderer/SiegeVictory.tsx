@@ -34,7 +34,7 @@ export function SiegeVictory({ campaign }: { campaign: FontenoyCampaign }) {
       : null;
   const battles = campaign.tabletop?.battles ?? [];
   return (
-    <div className="tabletop-layout">
+    <div className="tabletop-layout" data-helper="legacy-siege">
       <section
         className="panel tabletop-overview"
         aria-label="Campaign aftermath and siege"

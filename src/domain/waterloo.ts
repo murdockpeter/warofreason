@@ -1,3 +1,8 @@
+import { applyCommanderCommand } from './simultaneous-commanders';
+import {
+  applySiegeCommand,
+  finalizeSiegeCheckpoint,
+} from './simultaneous-siege';
 import {
   waterlooCampaignSchema,
   waterlooReceiptSchema,
@@ -950,11 +955,23 @@ export function applyWaterlooCommand(
   input: Campaign,
   raw: WaterlooReceipt,
 ): Campaign {
-  const { command, recordId } = waterlooReceiptSchema.parse(raw);
+  const { command, recordId, timestamp } = waterlooReceiptSchema.parse(raw);
   if (input.status === 'archived')
     throw new Error('Archived campaigns are read-only.');
+  if (input.fontenoy?.siege.campaign?.victory)
+    throw new Error(
+      'The campaign has concluded; its strategic record is read-only.',
+    );
   const c = structuredClone(input);
   switch (command.kind) {
+    case 'maurice-commanders-enable':
+    case 'maurice-commander':
+      applyCommanderCommand(c, { command, recordId, timestamp });
+      break;
+    case 'maurice-siege-policy':
+    case 'maurice-siege-review':
+      applySiegeCommand(c, command);
+      break;
     case 'maurice-recovery-policy': {
       if (!c.fontenoy)
         throw new Error('Open a simultaneous Maurice Fontenoy campaign.');
@@ -1316,6 +1333,12 @@ export function applyWaterlooCommand(
         throw new Error(
           'Finish all movement, contact and battle reviews first.',
         );
+      finalizeSiegeCheckpoint(c, timestamp);
+      if (c.fontenoy?.siege.campaign?.victory) {
+        c.effectSerial++;
+        processMauriceRecovery(c);
+        break;
+      }
       if (c.turn >= 100)
         throw new Error('The 100-phase sandbox window is complete.');
       c.turn++;

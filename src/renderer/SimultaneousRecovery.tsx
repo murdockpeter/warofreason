@@ -57,7 +57,10 @@ export function SimultaneousRecoveryPanel({
     state.waterlooDraft?.kind === 'recovery-policy'
       ? state.waterlooDraft
       : null;
-  const busy = state.pending || c.status === 'archived';
+  const busy =
+    state.pending ||
+    c.status === 'archived' ||
+    !!c.fontenoy?.siege.campaign?.victory;
   const canConfigure =
     view === 'umpire' &&
     c.phase === 'planning' &&
@@ -78,7 +81,7 @@ export function SimultaneousRecoveryPanel({
       });
   };
   return (
-    <details className="panel simultaneous-recovery">
+    <details className="panel simultaneous-recovery" data-helper="recovery">
       <summary>
         Maurice unit recovery{strategic ? ' · enabled' : ' · not enabled'}
       </summary>

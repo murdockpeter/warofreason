@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { SimultaneousCommanders } from './SimultaneousCommanders';
+import { SimultaneousSiegePanel } from './SimultaneousSiege';
+import { useEffect, useState } from 'react';
 import type {
   WaterlooBattle,
   WaterlooCampaign,
@@ -39,6 +41,11 @@ export function WaterlooDesk({ campaign: c }: { campaign: WaterlooCampaign }) {
       ? (c.corps.find((f) => f.id === draft.corpsId)?.side ?? 'french')
       : 'french';
   });
+  // Mirror the visible choice for guidance; opening a desk keeps its original defaults.
+  useEffect(
+    () => useOperationalSession.getState().setPlanningSide(planningSide),
+    [planningSide],
+  );
   const [selected, setSelected] = useState(() => {
     const draft = useCampaigns.getState().waterlooDraft;
     return draft && 'corpsId' in draft ? draft.corpsId : c.corps[0]!.id;
@@ -52,7 +59,10 @@ export function WaterlooDesk({ campaign: c }: { campaign: WaterlooCampaign }) {
   const submission = c.submissions.find((s) => s.side === side)!;
   const draft =
     state.waterlooDraft?.kind === 'route' ? state.waterlooDraft : null;
-  const busy = state.pending || c.status === 'archived';
+  const busy =
+    state.pending ||
+    c.status === 'archived' ||
+    !!c.fontenoy?.siege.campaign?.victory;
   const editing =
     ['planning', 'locked'].includes(c.phase) &&
     !submission.locked &&
@@ -155,6 +165,7 @@ export function WaterlooDesk({ campaign: c }: { campaign: WaterlooCampaign }) {
           <label>
             Map view
             <select
+              data-helper="view"
               value={view}
               disabled={!!state.waterlooDraft || state.pending}
               onChange={(e) => setView(e.target.value as typeof view)}
@@ -168,6 +179,7 @@ export function WaterlooDesk({ campaign: c }: { campaign: WaterlooCampaign }) {
             <label>
               Planning side
               <select
+                data-helper="planning-side"
                 value={planningSide}
                 disabled={!!state.waterlooDraft || state.pending}
                 onChange={(e) =>
@@ -197,6 +209,7 @@ export function WaterlooDesk({ campaign: c }: { campaign: WaterlooCampaign }) {
         </p>
         <div className="button-row">
           <button
+            data-helper="lock"
             disabled={!editing || !!state.waterlooDraft}
             onClick={() =>
               commit({
@@ -218,6 +231,7 @@ export function WaterlooDesk({ campaign: c }: { campaign: WaterlooCampaign }) {
                   !['planning', 'locked'].includes(c.phase) ||
                   (!!c.preparation && !c.preparation.resolved)
                 }
+                data-helper="reopen"
                 onClick={() => commit({ kind: 'reset-orders' })}
               >
                 Reopen both submissions
@@ -229,14 +243,20 @@ export function WaterlooDesk({ campaign: c }: { campaign: WaterlooCampaign }) {
                   !c.submissions.every((s) => s.locked) ||
                   c.phase === 'checkpoint'
                 }
+                data-helper="resolve"
                 onClick={() => commit({ kind: 'resolve' })}
               >
                 Resolve simultaneous movement
               </button>
               <button
                 disabled={
-                  busy || !!state.waterlooDraft || c.phase !== 'checkpoint'
+                  busy ||
+                  !!state.waterlooDraft ||
+                  c.phase !== 'checkpoint' ||
+                  (!!c.fontenoy?.siege.campaign &&
+                    !c.fontenoy.siege.campaign.pendingReview)
                 }
+                data-helper="finalize"
                 onClick={() => commit({ kind: 'finalize' })}
               >
                 Finish shared phase
@@ -263,15 +283,21 @@ export function WaterlooDesk({ campaign: c }: { campaign: WaterlooCampaign }) {
           </ul>
           <p>
             Tournai siege: {c.fontenoy.siege.status.replaceAll('_', ' ')} ·
-            recorded progress {c.fontenoy.siege.progress}. Per-unit recovery can
-            be enabled below; shared-phase siege and victory integration remain
-            the next campaign increment.
+            recorded progress {c.fontenoy.siege.progress}. Review optional
+            recovery and siege policies below. Tactical adjudication remains
+            external.
           </p>
         </section>
       )}
+      {c.fontenoy && <SimultaneousSiegePanel c={c} view={view} />}
       {c.fontenoy && <SimultaneousRecoveryPanel c={c} view={view} />}
+      {c.fontenoy && <SimultaneousCommanders c={c} view={view} />}
       <WaterlooPreparation campaign={c} side={side} view={view} />
-      <section className="panel" aria-label="Hex campaign map">
+      <section
+        className="panel"
+        data-helper="map"
+        aria-label="Hex campaign map"
+      >
         <div className="section-heading">
           <h2>{c.fontenoy?.title ?? 'Operational reference map'}</h2>
           <span>
@@ -501,6 +527,11 @@ export function WaterlooDesk({ campaign: c }: { campaign: WaterlooCampaign }) {
                     key={f.id}
                     role="button"
                     tabIndex={0}
+                    data-helper-focus={
+                      f.side === side && f.kind !== 'detachment'
+                        ? 'formation'
+                        : undefined
+                    }
                     aria-label={`Select ${visible(f) ? f.name : 'opposing corps'}`}
                     onClick={() => beginRoute(f)}
                     onKeyDown={(e) => {
@@ -615,7 +646,11 @@ export function WaterlooDesk({ campaign: c }: { campaign: WaterlooCampaign }) {
           </div>
         )}
         {draft && (
-          <div className="campaign-editor" aria-label="Hex route draft">
+          <div
+            className="campaign-editor"
+            data-helper="route"
+            aria-label="Hex route draft"
+          >
             <h3>
               Route for {c.corps.find((f) => f.id === draft.corpsId)!.name}
             </h3>
@@ -695,7 +730,9 @@ export function WaterlooDesk({ campaign: c }: { campaign: WaterlooCampaign }) {
             </div>
           </div>
         )}
-        <h3>{side === 'french' ? 'French' : alliedLabel} saved orders</h3>
+        <h3 data-helper="orders" tabIndex={-1}>
+          {side === 'french' ? 'French' : alliedLabel} saved orders
+        </h3>
         {!submission.orders.length && (
           <p>No movement orders. Unordered corps hold.</p>
         )}
@@ -893,7 +930,11 @@ export function WaterlooDesk({ campaign: c }: { campaign: WaterlooCampaign }) {
               ) : null;
             })}
           </details>
-          <section className="panel" aria-label="Pending encounters">
+          <section
+            className="panel"
+            data-helper="battles"
+            aria-label="Pending encounters"
+          >
             <h2>Contacts and battles</h2>
             {!c.encounters.some((e) => !e.settled) && (
               <p>No outstanding contacts.</p>
@@ -1055,7 +1096,10 @@ function BattleCard({
   battle: WaterlooBattle;
 }) {
   const state = useCampaigns();
-  const busy = state.pending || c.status === 'archived';
+  const busy =
+    state.pending ||
+    c.status === 'archived' ||
+    !!c.fontenoy?.siege.campaign?.victory;
   const draft =
     state.waterlooDraft?.kind === 'result' &&
     state.waterlooDraft.battleId === b.id
@@ -1289,6 +1333,7 @@ function BattleCard({
       <MauriceResultRecord battle={b} />
       {draft && (
         <form
+          data-helper="result"
           aria-label="Manual tactical result"
           onSubmit={(e) => {
             e.preventDefault();

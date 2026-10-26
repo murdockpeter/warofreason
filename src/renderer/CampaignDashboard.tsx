@@ -8,7 +8,11 @@ export function CampaignDashboard() {
   const busy = pending || loading;
   return (
     <div className="campaign-dashboard">
-      <section className="panel campaign-library" aria-label="Campaign library">
+      <section
+        className="panel campaign-library"
+        data-helper="library"
+        aria-label="Campaign library"
+      >
         <div className="section-heading">
           <h2>Campaign library</h2>
           <div className="button-row">
@@ -115,6 +119,7 @@ export function CampaignDashboard() {
             them before saving.
           </p>
           <form
+            data-helper="campaign-editor"
             onSubmit={(event) => {
               event.preventDefault();
               void state.save();

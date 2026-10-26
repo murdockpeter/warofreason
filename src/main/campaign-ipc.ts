@@ -109,6 +109,10 @@ export function registerCampaignIpc(
           'enable-preparation',
           'resolve-withdrawals',
           'maurice-recovery-policy',
+          'maurice-commanders-enable',
+          'maurice-commander',
+          'maurice-siege-policy',
+          'maurice-siege-review',
           'reset-withdrawals',
         ].includes(input.command.kind)
       ) {

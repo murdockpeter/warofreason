@@ -141,6 +141,15 @@ export function nextPlayerStep(
     };
   if (
     campaign.schemaVersion === 3 &&
+    campaign.fontenoy?.siege.campaign?.victory
+  )
+    return {
+      title: 'Campaign concluded',
+      text: 'Review the Tournai checkpoint history and campaign outcome. Export a backup or clone a fresh setup from Dashboard.',
+      screen: 'Campaign Map',
+    };
+  if (
+    campaign.schemaVersion === 3 &&
     campaign.preparation &&
     !campaign.preparation.resolved
   )
@@ -161,7 +170,7 @@ export function nextPlayerStep(
         campaign.phase === 'adjudication'
           ? 'In umpire view, settle contacts or declare a battle, review likely reinforcements, enter the tactical result and approve campaign effects before resuming movement.'
           : campaign.phase === 'checkpoint'
-            ? 'Movement and required battle reviews are complete. Finish the shared phase to open the next AM/PM planning window and process any due Maurice unit recoveries when enabled.'
+            ? 'Movement and battle reviews are complete. If siege rules are enabled, review the Tournai conditions and separate campaign exhaustion. Finish shared phase applies reviewed siege/victory effects and due unit recovery.'
             : 'Select a friendly corps and adjacent hexes, save up to three movement segments, then lock each side. Neither side moves before simultaneous resolution.',
       screen: 'Campaign Map',
     };

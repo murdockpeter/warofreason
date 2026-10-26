@@ -172,6 +172,7 @@ export function OperationalMap({
             )}
             {!op && campaign.status === 'active' && view === 'umpire' && (
               <button
+                data-helper="legacy-enable"
                 onClick={() => {
                   void state.operate({ kind: 'enable' });
                 }}
@@ -218,6 +219,7 @@ export function OperationalMap({
             <label>
               Map view
               <select
+                data-helper="view"
                 aria-label="Map view"
                 value={view}
                 onChange={(e) => {
@@ -493,6 +495,7 @@ export function OperationalMap({
         </summary>
         <section
           className="panel operational-orders"
+          data-helper="legacy-orders"
           aria-label="Operational orders"
         >
           <h2>
@@ -841,6 +844,7 @@ function InteractiveMap({
   return (
     <section
       className="panel schematic-panel"
+      data-helper="legacy-map"
       aria-label="Interactive campaign map"
     >
       <div className="section-heading">

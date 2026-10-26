@@ -1897,3 +1897,178 @@ g[role='button']:focus-visible > .column-marker > .map-column {
   border-left: 3px solid var(--brass);
   background: var(--surface-inset);
 }
+.simultaneous-siege {
+  padding: 22px;
+}
+.simultaneous-siege p {
+  line-height: 1.7;
+  color: var(--text-muted);
+}
+.simultaneous-siege summary {
+  cursor: pointer;
+  color: var(--brass-text);
+  padding: 8px 0;
+}
+.simultaneous-siege fieldset {
+  margin: 18px 0;
+  padding: 18px;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+}
+.simultaneous-siege label {
+  display: block;
+  margin: 12px 0;
+}
+.simultaneous-siege input:not([type='checkbox']),
+.simultaneous-siege select,
+.simultaneous-siege textarea {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  margin-top: 8px;
+  padding: 10px;
+  background: var(--surface-inset);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font: inherit;
+}
+.simultaneous-siege textarea {
+  min-height: 90px;
+  resize: vertical;
+}
+.siege-preview {
+  margin: 18px 0;
+  padding: 16px;
+  border-left: 3px solid var(--brass);
+  background: var(--surface-inset);
+}
+.helper-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  white-space: nowrap;
+  color: var(--text);
+  font-size: 13px;
+  cursor: pointer;
+}
+.player-helper {
+  margin-bottom: 22px;
+  padding: 18px 22px;
+  border: 1px solid var(--brass);
+  border-radius: 10px;
+  background: var(--surface);
+}
+.player-helper h2 {
+  margin: 8px 0;
+  font-size: 21px;
+}
+.player-helper p {
+  margin: 8px 0;
+  line-height: 1.6;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+.helper-stages {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  padding: 0;
+  margin: 14px 0;
+  list-style: none;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.helper-stages [aria-current='step'] {
+  color: var(--brass-text);
+  font-weight: 700;
+  border-bottom: 2px solid var(--brass);
+}
+.helper-choices {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+.helper-choices > div {
+  padding: 12px;
+  border-radius: 6px;
+  background: var(--surface-inset);
+}
+.helper-choices strong {
+  font-size: 14px;
+}
+.helper-choices button {
+  text-align: left;
+  font-size: 12px;
+}
+.helper-next {
+  outline: 2px solid var(--brass);
+  outline-offset: 4px;
+  scroll-margin: 20px;
+}
+.helper-next:focus-visible {
+  outline: 3px solid var(--brass-text);
+}
+.simultaneous-officers {
+  padding: 18px 22px;
+}
+.simultaneous-officers summary {
+  cursor: pointer;
+  color: var(--brass-text);
+  padding: 8px 0;
+}
+.simultaneous-officers p {
+  color: var(--text-muted);
+  line-height: 1.7;
+}
+.officer-roster > details {
+  margin: 12px 0;
+  padding: 10px 14px;
+  border: 1px solid var(--border-soft);
+  border-radius: 7px;
+}
+.officer-reference {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.simultaneous-officers fieldset {
+  margin: 18px 0;
+  padding: 18px;
+  border: 1px solid var(--border-soft);
+  border-radius: 7px;
+}
+.simultaneous-officers label {
+  display: block;
+  margin: 12px 0;
+}
+.simultaneous-officers input,
+.simultaneous-officers select,
+.simultaneous-officers textarea {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  margin-top: 8px;
+  padding: 10px;
+  font: inherit;
+  color: var(--text);
+  background: var(--surface-inset);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+.simultaneous-officers textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+@media (max-width: 760px) {
+  .helper-toggle {
+    margin-left: 0;
+  }
+  .player-helper {
+    padding: 14px;
+  }
+  .player-helper .section-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

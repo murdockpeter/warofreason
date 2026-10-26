@@ -111,8 +111,28 @@ export function HelpManual({
           Morale and explicit broken-unit decisions. Approval plus battle-end
           resolution applies losses/rebuilding; Finish shared phase processes
           due returns. Units keep conscript quality when rebuilt. Correct
-          results before later movement or phase changes depend on them.
-          Automatic siege/victory integration remains the next increment.
+          results before later movement or phase changes depend on them. For
+          siege play, open Tournai, then Siege rules and checkpoint history to
+          review and enable the provisional policy during clear planning. At
+          each checkpoint, Review siege checkpoint: attest investment, supply,
+          relief and separate campaign exhaustion for the displayed calendar
+          interval. Add an explanation and confirm. Preview the effects, then
+          Finish shared phase to apply progress and evaluate victory together.
+          Eligible calendar hours carry forward; AM/PM phases are not source
+          campaign turns. A recorded campaign outcome ends strategic play;
+          history and exports remain available.
+        </p>
+        <p>
+          Commanders and Notables are under the collapsed Commanders &amp;
+          Notables panel. Enable management during clear planning to preserve
+          the current roster as a setup-clone baseline. Record arrivals,
+          names/private references, status and own-side attachments with an
+          explanation. Attachments require clear planning; other decisions can
+          also follow a settled battle at a checkpoint, before siege review.
+          Lost/retired officers detach; restoring active status leaves them
+          unassigned. Earlier battle briefs stay frozen. Card effects and HQ
+          ratings remain manual. Optional Epic Points and scouting integration
+          are still pending.
         </p>
         <button onClick={() => go('Campaign Map')}>Open Campaign Map</button>
       </ReaderDialog>

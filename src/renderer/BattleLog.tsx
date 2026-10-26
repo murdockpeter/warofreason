@@ -38,7 +38,7 @@ export function BattleLog({ campaign }: { campaign: FontenoyCampaign }) {
   );
   const draft = state.tabletopDraft;
   return (
-    <div className="tabletop-layout">
+    <div className="tabletop-layout" data-helper="legacy-battles">
       <section className="panel tabletop-overview" aria-label="Tabletop bridge">
         <h2>Scouting & tabletop battles</h2>
         <p>

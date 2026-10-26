@@ -1,4 +1,15 @@
+import {
+  simultaneousCommandersSchema,
+  officerActionSchema,
+} from './simultaneous-commanders-schema';
+import { commanderRecordIssues } from './simultaneous-commanders';
+import {
+  simultaneousSiegeSchema,
+  simultaneousSiegePolicySchema,
+  siegeReviewSchema,
+} from './simultaneous-siege-schema';
 import { z } from 'zod';
+import { siegeVictory } from './siege-victory';
 import {
   simultaneousRecoveryPolicySchema,
   simultaneousAftermathSchema,
@@ -293,6 +304,7 @@ export const waterlooCampaignSchema = z
           .length(2),
         units: z.array(fontenoyUnitSchema).length(38),
         commanders: z.array(fontenoyCommanderSchema),
+        officers: simultaneousCommandersSchema.optional(),
         formations: z.array(
           z
             .object({
@@ -316,6 +328,7 @@ export const waterlooCampaignSchema = z
           .length(2),
         siege: z
           .object({
+            campaign: simultaneousSiegeSchema.optional(),
             hexId: z.string(),
             status: z.enum(['not_started', 'invested', 'relieved']),
             progress: z.number().int().min(0).max(10000),
@@ -340,6 +353,107 @@ export const waterlooCampaignSchema = z
     )
       issue('Operational setting and rules profile must agree.');
     if (c.fontenoy) {
+      for (const message of commanderRecordIssues(c)) issue(message);
+      const siege = c.fontenoy.siege,
+        state = siege.campaign;
+      if (state) {
+        if (
+          state.enabledAt > state.lastCheckpointAt ||
+          state.lastCheckpointAt > c.cursor ||
+          state.eligibleMinutes >= state.policy.minutesPerSiegeTurn
+        )
+          issue('Invalid siege calendar or carried eligible time.');
+        if (
+          state.pendingReview &&
+          (c.phase !== 'checkpoint' ||
+            state.victory ||
+            state.pendingReview.turn !== c.turn ||
+            state.pendingReview.at !== c.cursor)
+        )
+          issue('Siege review must match the current unfinished checkpoint.');
+        let previousAt = state.enabledAt,
+          previousProgress: number | null = null,
+          carried = 0,
+          previousTurn = 0;
+        for (const checkpoint of state.checkpoints) {
+          const { review, policy } = checkpoint;
+          const eligible =
+            review.conditions.invested &&
+            review.conditions.supplied &&
+            !review.conditions.relieved;
+          const total = carried + (eligible ? checkpoint.at - previousAt : 0);
+          const increments = Math.floor(total / policy.minutesPerSiegeTurn);
+          const progress = Math.min(
+            10000,
+            checkpoint.progressBefore +
+              increments * policy.rules.siegeIncrement,
+          );
+          const outcome = siegeVictory(
+            progress,
+            review.conditions,
+            review.exhaustion,
+            policy.rules,
+            checkpoint.at >= policy.deadlineAt,
+          );
+          if (
+            checkpoint.fromAt !== previousAt ||
+            checkpoint.at < previousAt ||
+            checkpoint.at > c.cursor ||
+            checkpoint.turn <= previousTurn ||
+            checkpoint.turn > c.turn ||
+            checkpoint.eligibleMinutesBefore !== carried ||
+            checkpoint.eligibleMinutesAfter !==
+              total % policy.minutesPerSiegeTurn ||
+            checkpoint.increments !== increments ||
+            checkpoint.progressAfter !== progress ||
+            (previousProgress !== null &&
+              checkpoint.progressBefore !== previousProgress) ||
+            JSON.stringify(checkpoint.victory) !== JSON.stringify(outcome) ||
+            (previousTurn &&
+              state.checkpoints.find((p) => p.turn === previousTurn)?.victory)
+          )
+            issue(
+              'Siege checkpoint history must preserve its reviewed conditions, timing and outcome.',
+            );
+          previousAt = checkpoint.at;
+          previousProgress = checkpoint.progressAfter;
+          carried = checkpoint.eligibleMinutesAfter;
+          previousTurn = checkpoint.turn;
+        }
+        const last = state.checkpoints.at(-1);
+        if (
+          state.lastCheckpointAt !== previousAt ||
+          state.eligibleMinutes !== carried ||
+          (last && siege.progress !== last.progressAfter)
+        )
+          issue('Current siege state must agree with its checkpoint history.');
+        if (
+          last &&
+          siege.status !==
+            (last.review.conditions.relieved
+              ? 'relieved'
+              : last.review.conditions.invested
+                ? 'invested'
+                : 'not_started')
+        )
+          issue('Siege status must agree with the last finalized conditions.');
+        const expectedVictory = last?.victory
+          ? {
+              ...last.victory,
+              turn: last.turn,
+              at: last.at,
+              timestamp: last.timestamp,
+            }
+          : null;
+        if (
+          JSON.stringify(state.victory) !== JSON.stringify(expectedVictory) ||
+          (state.victory &&
+            (c.phase !== 'checkpoint' ||
+              c.turn !== state.victory.turn ||
+              c.cursor !== state.victory.at))
+        )
+          issue('Campaign victory must belong to its final siege checkpoint.');
+      }
       for (const group of fontenoyFacts.unitGroups)
         if (
           c.fontenoy.units.filter(
@@ -801,6 +915,25 @@ export type WaterlooMarch = z.infer<typeof marchSchema>;
 export type ReinforcementEstimate = z.infer<typeof reinforcementSchema>;
 export type WithdrawalOrder = z.infer<typeof withdrawalOrderSchema>;
 export const waterlooCommandSchema = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('maurice-commanders-enable') }).strict(),
+  z
+    .object({
+      kind: z.literal('maurice-commander'),
+      action: officerActionSchema,
+    })
+    .strict(),
+  z
+    .object({
+      kind: z.literal('maurice-siege-policy'),
+      policy: simultaneousSiegePolicySchema,
+    })
+    .strict(),
+  z
+    .object({
+      kind: z.literal('maurice-siege-review'),
+      review: siegeReviewSchema,
+    })
+    .strict(),
   z
     .object({
       kind: z.literal('maurice-recovery-policy'),

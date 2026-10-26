@@ -91,7 +91,11 @@ function SetupEditor({ campaign }: { campaign: FontenoyCampaign }) {
   }
   return (
     <div className="setup-layout">
-      <section className="panel setup-intro" aria-label="Fontenoy setup review">
+      <section
+        className="panel setup-intro"
+        data-helper="setup"
+        aria-label="Fontenoy setup review"
+      >
         <p className="eyebrow">
           {status === 'active'
             ? 'STARTED CAMPAIGN'

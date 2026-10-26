@@ -14,6 +14,8 @@ import { SplitFormation } from './SplitFormation';
 import { HelpManual } from './HelpManual';
 import { WaterlooDesk } from './WaterlooDesk';
 import { campaignTime } from '../domain/waterloo';
+import { PlayerHelper } from './PlayerHelper';
+import { useHelperSession } from './helper-session';
 
 const descriptions: Record<
   Screen,
@@ -69,6 +71,8 @@ const descriptions: Record<
 };
 
 export function App() {
+  const { enabled: helperEnabled, setEnabled: setHelperEnabled } =
+    useHelperSession();
   const { view, setView } = useOperationalSession();
   const { screen, navigate, notice, setNotice } = useSession();
   const [version, setVersion] = useState('Connecting…');
@@ -212,12 +216,21 @@ export function App() {
           <span className="badge">
             {library?.active?.status === 'archived'
               ? 'Archived campaign'
-              : scenario?.aftermath?.victory
+              : scenario?.aftermath?.victory ||
+                  waterloo?.fontenoy?.siege.campaign?.victory
                 ? 'Campaign concluded'
                 : library?.active?.status === 'active'
                   ? 'Campaign started'
                   : 'Campaign setup'}
           </span>
+          <label className="helper-toggle">
+            <input
+              type="checkbox"
+              checked={helperEnabled}
+              onChange={(e) => setHelperEnabled(e.target.checked)}
+            />
+            Helper mode
+          </label>
         </header>
         <section className="status-strip" aria-label="Campaign status">
           {[
@@ -310,80 +323,89 @@ export function App() {
             </div>
             <span className="milestone">{content.milestone}</span>
           </div>
-          {view !== 'umpire' &&
-          screen !== 'Campaign Map' &&
-          screen !== 'Turn Orders' &&
-          screen !== 'Settings' ? (
-            <section className="panel settings">
-              <h2>Shared campaign management</h2>
-              <p>
-                This screen includes both sides’ rosters or campaign records.
-                Switch to umpire view when both players are ready to share that
-                information.
-              </p>
-              <button onClick={() => setView('umpire')}>
-                Switch to umpire view
-              </button>
-            </section>
-          ) : screen === 'Dashboard' ? (
-            <CampaignDashboard />
-          ) : waterloo && screen !== 'Settings' ? (
-            <WaterlooDesk campaign={waterloo} />
-          ) : screen === 'Armies/Columns' ? (
-            <FontenoySetup />
-          ) : screen === 'Campaign Map' ? (
-            <CampaignMap campaign={current ?? null} />
-          ) : screen === 'Turn Orders' && scenario ? (
-            <OperationalMap campaign={scenario} ordersOnly />
-          ) : screen === 'Battle Log' && scenario ? (
-            <BattleLog campaign={scenario} />
-          ) : screen === 'Siege & Victory' && scenario ? (
-            <SiegeVictory campaign={scenario} />
-          ) : screen === 'Settings' ? (
-            <section className="panel settings">
-              <h2>Application</h2>
-              <dl>
-                <div>
-                  <dt>Version</dt>
-                  <dd>{version}</dd>
+          <PlayerHelper
+            campaign={library?.active ?? null}
+            view={view}
+            onHelp={() => setHelpOpen(true)}
+          />
+          <div className="screen-content" data-helper="screen">
+            {view !== 'umpire' &&
+            screen !== 'Campaign Map' &&
+            screen !== 'Turn Orders' &&
+            screen !== 'Settings' ? (
+              <section className="panel settings">
+                <h2>Shared campaign management</h2>
+                <p>
+                  This screen includes both sides’ rosters or campaign records.
+                  Switch to umpire view when both players are ready to share
+                  that information.
+                </p>
+                <button data-helper="view" onClick={() => setView('umpire')}>
+                  Switch to umpire view
+                </button>
+              </section>
+            ) : screen === 'Dashboard' ? (
+              <CampaignDashboard />
+            ) : waterloo && screen !== 'Settings' ? (
+              <WaterlooDesk campaign={waterloo} />
+            ) : screen === 'Armies/Columns' ? (
+              <FontenoySetup />
+            ) : screen === 'Campaign Map' ? (
+              <CampaignMap campaign={current ?? null} />
+            ) : screen === 'Turn Orders' && scenario ? (
+              <OperationalMap campaign={scenario} ordersOnly />
+            ) : screen === 'Battle Log' && scenario ? (
+              <BattleLog campaign={scenario} />
+            ) : screen === 'Siege & Victory' && scenario ? (
+              <SiegeVictory campaign={scenario} />
+            ) : screen === 'Settings' ? (
+              <section className="panel settings">
+                <h2>Application</h2>
+                <dl>
+                  <div>
+                    <dt>Version</dt>
+                    <dd>{version}</dd>
+                  </div>
+                  <div>
+                    <dt>Storage</dt>
+                    <dd>Local SQLite · automatic save on committed actions</dd>
+                  </div>
+                  <div>
+                    <dt>Connectivity</dt>
+                    <dd>Local only · no account required</dd>
+                  </div>
+                  <div>
+                    <dt>Diagnostics</dt>
+                    <dd>Local app log · no remote telemetry</dd>
+                  </div>
+                </dl>
+                <h2>Session notice</h2>
+                <p>
+                  Clear a diagnostic notice after reviewing it. A confirmation
+                  dialog will open.
+                </p>
+                <button
+                  disabled={pending}
+                  onClick={() => {
+                    void resetNotice();
+                  }}
+                >
+                  {pending
+                    ? 'Waiting for confirmation…'
+                    : 'Reset session notice'}
+                </button>
+              </section>
+            ) : (
+              <section className="panel empty-state">
+                <div className="empty-symbol" aria-hidden="true">
+                  ◇
                 </div>
-                <div>
-                  <dt>Storage</dt>
-                  <dd>Local SQLite · automatic save on committed actions</dd>
-                </div>
-                <div>
-                  <dt>Connectivity</dt>
-                  <dd>Local only · no account required</dd>
-                </div>
-                <div>
-                  <dt>Diagnostics</dt>
-                  <dd>Local app log · no remote telemetry</dd>
-                </div>
-              </dl>
-              <h2>Session notice</h2>
-              <p>
-                Clear a diagnostic notice after reviewing it. A confirmation
-                dialog will open.
-              </p>
-              <button
-                disabled={pending}
-                onClick={() => {
-                  void resetNotice();
-                }}
-              >
-                {pending ? 'Waiting for confirmation…' : 'Reset session notice'}
-              </button>
-            </section>
-          ) : (
-            <section className="panel empty-state">
-              <div className="empty-symbol" aria-hidden="true">
-                ◇
-              </div>
-              <p className="eyebrow">READY FOR THE NEXT CHAPTER</p>
-              <h2>{content.empty}</h2>
-              <p>{content.detail}</p>
-            </section>
-          )}
+                <p className="eyebrow">READY FOR THE NEXT CHAPTER</p>
+                <h2>{content.empty}</h2>
+                <p>{content.detail}</p>
+              </section>
+            )}
+          </div>
           <details className="rules-help">
             <summary>Rules & help</summary>
             <section className="rules-note" aria-label="Rules boundary">

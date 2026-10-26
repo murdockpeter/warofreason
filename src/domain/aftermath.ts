@@ -1,3 +1,4 @@
+import { siegeVictory } from './siege-victory';
 import {
   canRebuildUnit,
   unitRecoveryStrategies,
@@ -84,51 +85,14 @@ export function evaluateCampaignVictory(
   timestamp: string,
 ) {
   const state = campaign.aftermath!;
-  const rules = state.rules;
-  const french: string[] = [];
-  const allied: string[] = [];
-  if (
-    campaign.settings.siege.progress >= rules.siegeThreshold &&
-    state.conditions.invested &&
-    state.conditions.supplied
-  )
-    french.push('Siege threshold reached with verified investment and supply.');
-  if (state.conditions.relieved)
-    allied.push('Umpire-confirmed relief achieved.');
-  if (rules.exhaustionThreshold !== null) {
-    if (state.exhaustion.allied >= rules.exhaustionThreshold)
-      french.push(
-        'Allied campaign exhaustion reached the configured threshold.',
-      );
-    if (state.exhaustion.french >= rules.exhaustionThreshold)
-      allied.push(
-        'French campaign exhaustion reached the configured threshold.',
-      );
-  }
-  if (
-    !french.length &&
-    !allied.length &&
-    completedTurn < campaign.settings.schedule.turnCount
-  )
-    return null;
-  const winner =
-    french.length && allied.length
-      ? rules.conflictOutcome
-      : french.length
-        ? ('french' as const)
-        : allied.length
-          ? ('allied' as const)
-          : rules.deadlineOutcome;
-  const reasons = [...french, ...allied];
-  if (french.length && allied.length)
-    reasons.push(
-      `Conflicting conditions: configured outcome ${rules.conflictOutcome}.`,
-    );
-  if (!reasons.length)
-    reasons.push(
-      `Campaign deadline reached without another condition; configured outcome ${rules.deadlineOutcome}.`,
-    );
-  return { winner, turn: completedTurn, reasons, timestamp };
+  const result = siegeVictory(
+    campaign.settings.siege.progress,
+    state.conditions,
+    state.exhaustion,
+    state.rules,
+    completedTurn >= campaign.settings.schedule.turnCount,
+  );
+  return result ? { ...result, turn: completedTurn, timestamp } : null;
 }
 export function applyAftermathCommand(
   campaign: FontenoyCampaign,
