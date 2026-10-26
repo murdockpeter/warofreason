@@ -131,8 +131,13 @@ export function HelpManual({
           also follow a settled battle at a checkpoint, before siege review.
           Lost/retired officers detach; restoring active status leaves them
           unassigned. Earlier battle briefs stay frozen. Card effects and HQ
-          ratings remain manual. Optional Epic Points and scouting integration
-          are still pending.
+          ratings remain manual. For optional Epic Points, expand the Epic
+          Points panel and enable manual tracking during clear planning or a
+          settled checkpoint. Record reviewed battle values or a campaign event.
+          Blank means not recorded; zero is explicit. Correct an entry with a
+          reason; only its latest version counts in totals. Enter final-phase
+          points before campaign conclusion. Scoring does not change siege,
+          exhaustion or victory. Scouting integration remains pending.
         </p>
         <button onClick={() => go('Campaign Map')}>Open Campaign Map</button>
       </ReaderDialog>

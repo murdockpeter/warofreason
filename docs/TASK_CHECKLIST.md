@@ -1,5 +1,20 @@
 # Running implementation checklist
 
+## GitHub Actions dependency install repair - 2026-10-26
+
+- [x] Read failed run 40373159672: npm ci ETARGET for retry ^0.6.0, separate from the Node 20 action warning.
+- [x] Verify npm metadata and repair @humanfs/node 0.16.8 lockfile dependency to retry ^0.4.0; package-lock-only refresh changes no resolved dependency versions.
+- [x] Verify release commit SHAs/manifests, pin checkout 7.0.1 and setup-node 7.1.0 (Node 24), and use .nvmrc for application Node.
+- [x] Clean isolated npm ci including Electron postinstall passes (545 packages). Workflow YAML parses and preserves all validation steps. Workflow still requires a push to run on GitHub; no remote green run is claimed. Automatic approval review blocked cleanup of the dedicated maurice-ci-verify folder in Windows Temp with "blocked by policy"; the folder remains, separate from project/player data.
+
+## Optional manual Epic Points - 2026-10-26 / 0.12.0
+
+- [x] Inspect existing manual scoring, simultaneous journal/draft/correction guards and Helper checkpoint guidance.
+- [x] Add optional versioned ledger, one entry per reviewed battle, separate campaign events, null/zero distinction and append-only corrections with current-version totals.
+- [x] Add collapsed controls, own-side summaries/privacy, guarded entry/correction drafts and post-battle Helper guidance.
+- [x] Validate sources, revisions, totals, battle dependencies, rollback/restart/replay/import/clone and renderer workflows: all 251 unit/integration tests pass. Built and packaged Epic Points walkthroughs pass for null/zero, cancelled confirmations/draft navigation, corrections replacing totals, event/battle entries, privacy, unchanged battle/strategic state and portable restart; packaged ledger visually inspected.
+- [x] Complete acceptance: all 251 unit/integration tests, all 33 built/packaged Electron checks and offline development startup pass. Typecheck, lint, whole-project formatting, production build and Windows unpacked packaging pass; packaged ledger visually inspected. No player saves or private materials changed, and no commit/push/publish performed. Next: simultaneous scouting/intelligence. CI lockfile/runtime repair is recorded above.
+
 ## Simultaneous commanders and Notables - 2026-10-26 / 0.11.0
 
 - [x] Review existing commander records, frozen briefs, legacy management and correction/clone boundaries.

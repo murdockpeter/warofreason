@@ -31,3 +31,7 @@ Milestone D implements only `house_rule_v0.1/operations-1`: configurable 3-point
 ## Simultaneous commanders and Notables (0.11.0)
 
 `maurice_commanders_v0.1` records manually agreed campaign officer decisions, not an implementation of published Notable card effects. Player-entered arrivals carry campaign provenance; existing scenario provenance is retained. Names/private references, active/lost/retired status and attachments are explicit reviewed entries with explanations. Lost/retired officers detach; reactivation does not attach them. Faction-only attachment and planning/checkpoint guards are application campaign conventions. No tactical casualty/retirement, scouting modifier, command-range change or card bonus is inferred. Tactical resolution stays external. Epic Points and simultaneous scouting integration remain pending.
+
+## Manual Epic Points records (0.12.0)
+
+`maurice_manual_epic_v0.1` is a recordkeeping contract, not an approximation of published Maurice scoring. Players use their own materials to enter non-negative per-event values or leave them unrecorded; the application only sums current versions. Application bounds, duplicate-entry checks, clear-planning/checkpoint timing and correction guards are implementation conventions. No point award, card effect, tactical result, campaign exhaustion or victory threshold is inferred. Faction summaries withhold opposing values and umpire rationale.

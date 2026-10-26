@@ -110,6 +110,8 @@ export function registerCampaignIpc(
           'resolve-withdrawals',
           'maurice-recovery-policy',
           'maurice-commanders-enable',
+          'maurice-epic-enable',
+          'maurice-epic-record',
           'maurice-commander',
           'maurice-siege-policy',
           'maurice-siege-review',

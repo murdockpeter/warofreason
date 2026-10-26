@@ -1,4 +1,9 @@
 import {
+  epicLedgerSchema,
+  epicCommandSchema,
+} from './simultaneous-epic-schema';
+import { epicLedgerIssues } from './simultaneous-epic';
+import {
   simultaneousCommandersSchema,
   officerActionSchema,
 } from './simultaneous-commanders-schema';
@@ -305,6 +310,7 @@ export const waterlooCampaignSchema = z
         units: z.array(fontenoyUnitSchema).length(38),
         commanders: z.array(fontenoyCommanderSchema),
         officers: simultaneousCommandersSchema.optional(),
+        epic: epicLedgerSchema.optional(),
         formations: z.array(
           z
             .object({
@@ -354,6 +360,7 @@ export const waterlooCampaignSchema = z
       issue('Operational setting and rules profile must agree.');
     if (c.fontenoy) {
       for (const message of commanderRecordIssues(c)) issue(message);
+      for (const message of epicLedgerIssues(c)) issue(message);
       const siege = c.fontenoy.siege,
         state = siege.campaign;
       if (state) {
@@ -915,6 +922,8 @@ export type WaterlooMarch = z.infer<typeof marchSchema>;
 export type ReinforcementEstimate = z.infer<typeof reinforcementSchema>;
 export type WithdrawalOrder = z.infer<typeof withdrawalOrderSchema>;
 export const waterlooCommandSchema = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('maurice-epic-enable') }).strict(),
+  epicCommandSchema,
   z.object({ kind: z.literal('maurice-commanders-enable') }).strict(),
   z
     .object({

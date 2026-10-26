@@ -32,17 +32,19 @@ export function PlayerHelper({
     const kind = store.waterlooDraft.kind;
     draft = {
       target:
-        kind === 'officer'
-          ? 'officers'
-          : kind === 'route'
-            ? 'route'
-            : kind === 'result'
-              ? 'result'
-              : kind === 'withdrawal'
-                ? 'preparation'
-                : kind.startsWith('siege')
-                  ? 'siege'
-                  : 'recovery',
+        kind === 'epic'
+          ? 'epic'
+          : kind === 'officer'
+            ? 'officers'
+            : kind === 'route'
+              ? 'route'
+              : kind === 'result'
+                ? 'result'
+                : kind === 'withdrawal'
+                  ? 'preparation'
+                  : kind.startsWith('siege')
+                    ? 'siege'
+                    : 'recovery',
       screen: 'Campaign Map',
     };
   } else if (store.setupDraft)

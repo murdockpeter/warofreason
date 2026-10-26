@@ -1,3 +1,4 @@
+import type { EpicInput } from '../domain/simultaneous-epic-schema';
 import type { OfficerAction } from '../domain/simultaneous-commanders-schema';
 import type {
   SimultaneousSiegePolicy,
@@ -31,6 +32,13 @@ import type {
 import type { SimultaneousRecoveryPolicy } from '../domain/simultaneous-aftermath-schema';
 
 export type WaterlooDraft =
+  | {
+      kind: 'epic';
+      entryId: string | null;
+      expectedVersion: number;
+      input: EpicInput;
+      reason: string;
+    }
   | { kind: 'officer'; action: OfficerAction }
   | { kind: 'siege-policy'; policy: SimultaneousSiegePolicy }
   | { kind: 'siege-review'; review: SiegeReview }

@@ -2060,6 +2060,68 @@ g[role='button']:focus-visible > .column-marker > .map-column {
   min-height: 80px;
   resize: vertical;
 }
+.simultaneous-epic {
+  padding: 18px 22px;
+}
+.simultaneous-epic summary {
+  padding: 8px 0;
+  cursor: pointer;
+  color: var(--brass-text);
+}
+.simultaneous-epic p {
+  color: var(--text-muted);
+  line-height: 1.7;
+}
+.epic-totals,
+.epic-entries {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 14px;
+  margin: 16px 0;
+}
+.epic-totals > div,
+.epic-entries > article {
+  padding: 16px;
+  border: 1px solid var(--border-soft);
+  border-radius: 7px;
+  background: var(--surface-inset);
+}
+.epic-notes {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.epic-revision {
+  padding: 10px 0;
+  border-top: 1px solid var(--border-soft);
+}
+.simultaneous-epic fieldset {
+  padding: 18px;
+  margin: 18px 0;
+  border: 1px solid var(--border-soft);
+  border-radius: 7px;
+}
+.simultaneous-epic label {
+  display: block;
+  margin: 12px 0;
+}
+.simultaneous-epic input,
+.simultaneous-epic select,
+.simultaneous-epic textarea {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  margin-top: 8px;
+  padding: 10px;
+  background: var(--surface-inset);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font: inherit;
+}
+.simultaneous-epic textarea {
+  min-height: 80px;
+  resize: vertical;
+}
 @media (max-width: 760px) {
   .helper-toggle {
     margin-left: 0;

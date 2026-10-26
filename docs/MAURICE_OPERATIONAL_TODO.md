@@ -37,7 +37,8 @@ Scope corrected on 2026-10-25: Maurice is the default tactical game and Fontenoy
 ### Remaining integration work
 
 - [x] Carry over commander/Notable management without automating private card rules: opt-in baseline, manual arrivals/details/status/attachments, faction-safe history, frozen briefs and baseline clones.
-- [ ] Add optional Epic Points and scouting/intelligence to simultaneous campaigns without automating private card rules.
+- [x] Add optional manual Epic Points with battle/campaign-event entries, null/zero distinction, current-version totals, immutable corrections and faction-safe summaries.
+- [ ] Add scouting/intelligence to simultaneous campaigns without automating private card rules.
 - [ ] Add explicit upgrade/reconciliation for ongoing Fontenoy campaigns if wanted; the current action deliberately creates a fresh operational setup copy.
 - [ ] Add operational arrivals/entry queues and reinforce-battle scheduling across phase boundaries, including delayed/cancelled approaches and interception review.
 - [ ] Add agreed battlefield objectives/terrain editors, configurable operational charts and structured detachment troop allocation without duplicating parent units.
@@ -70,3 +71,13 @@ Commander management is complete as a focused increment: explicit opt-in reviewe
 All 235 unit/integration tests and the full 31-check built/packaged desktop suite pass. Commander and helper pairs pass again after final adjustments. Offline development startup, typecheck, lint, whole-project formatting, production build and Windows unpacked packaging pass; packaged commander controls were visually inspected. Persistence coverage includes rollback, restart, portable replay/tamper rejection and baseline cloning. Tests used isolated profiles; no player saves changed and no commit/push/publish occurred.
 
 Next: optional manual Epic Points, followed by simultaneous scouting/intelligence integration. Ongoing-save reconciliation, operational arrivals, structured detachment allocation and human playtesting remain pending.
+
+## Optional manual Epic Points - 0.12.0 / 2026-10-26
+
+The focused points increment is complete: optional enablement, one entry per applied battle or separate campaign event, null versus explicit zero, current-version per-side totals, missing-value/battle coverage counts, versioned corrections with reasons, stable battle result references, guarded drafts and post-battle Helper guidance. Faction views withhold opposing values, event titles, rationale and full correction history. Points change no tactical/strategic mechanics and do not block finalization; new setup clones discard the ledger.
+
+All 251 unit/integration tests, all 33 built/packaged desktop checks and offline development startup pass. Typecheck, lint, whole-project formatting, production build and Windows unpacked packaging pass; the packaged ledger was visually inspected. Tests cover cancellation, draft navigation, zero/missing values, corrected totals without double counting, unchanged battle/siege/unit data, transaction rollback, restart/import replay/tamper rejection and fresh cloning.
+
+A separate CI repair corrects unpublished retry ^0.6.0 metadata in the lockfile to the published ^0.4.0 dependency and pins Node 24-based checkout/setup-node releases. Clean isolated npm ci including Electron postinstall passes, and workflow YAML/.nvmrc validation passes. No hosted rerun, commit/push/publish or player-save change is claimed. The isolated clean-install folder remains in Windows Temp because automatic approval review blocked its cleanup; project/player data are separate.
+
+Next: simultaneous scouting and dated intelligence. Ongoing-save reconciliation, operational arrivals, structured detachment allocation and human playtesting remain pending.

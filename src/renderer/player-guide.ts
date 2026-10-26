@@ -176,6 +176,16 @@ export function playerGuide(
         'Movement and battle reviews are complete. The umpire handles the shared checkpoint; no new routes can be issued yet.',
         4,
       );
+    const epicChoices =
+      c.fontenoy && (c.fontenoy.epic || c.battles.some((b) => b.appliedVersion))
+        ? [
+            choice(
+              'Review optional Epic Points',
+              'Enter agreed points or leave them unrecorded; the app does not calculate Maurice scoring.',
+              'epic',
+            ),
+          ]
+        : [];
     const siege = c.fontenoy?.siege.campaign;
     const officerChoices = c.fontenoy?.officers
       ? [
@@ -198,6 +208,7 @@ export function playerGuide(
             'siege-review',
           ),
           ...officerChoices,
+          ...epicChoices,
         ],
       };
     return {
@@ -221,6 +232,7 @@ export function playerGuide(
               ),
             ]
           : officerChoices),
+        ...epicChoices,
       ],
     };
   }

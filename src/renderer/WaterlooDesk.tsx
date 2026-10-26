@@ -1,3 +1,4 @@
+import { SimultaneousEpic } from './SimultaneousEpic';
 import { SimultaneousCommanders } from './SimultaneousCommanders';
 import { SimultaneousSiegePanel } from './SimultaneousSiege';
 import { useEffect, useState } from 'react';
@@ -292,6 +293,7 @@ export function WaterlooDesk({ campaign: c }: { campaign: WaterlooCampaign }) {
       {c.fontenoy && <SimultaneousSiegePanel c={c} view={view} />}
       {c.fontenoy && <SimultaneousRecoveryPanel c={c} view={view} />}
       {c.fontenoy && <SimultaneousCommanders c={c} view={view} />}
+      {c.fontenoy && <SimultaneousEpic c={c} view={view} />}
       <WaterlooPreparation campaign={c} side={side} view={view} />
       <section
         className="panel"

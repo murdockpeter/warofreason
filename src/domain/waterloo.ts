@@ -1,3 +1,4 @@
+import { applyEpicCommand } from './simultaneous-epic';
 import { applyCommanderCommand } from './simultaneous-commanders';
 import {
   applySiegeCommand,
@@ -964,6 +965,10 @@ export function applyWaterlooCommand(
     );
   const c = structuredClone(input);
   switch (command.kind) {
+    case 'maurice-epic-enable':
+    case 'maurice-epic-record':
+      applyEpicCommand(c, { command, recordId, timestamp });
+      break;
     case 'maurice-commanders-enable':
     case 'maurice-commander':
       applyCommanderCommand(c, { command, recordId, timestamp });

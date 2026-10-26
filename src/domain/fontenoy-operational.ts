@@ -273,6 +273,7 @@ export function cloneFontenoyOperational(
       ).map((id) => commanderIds.get(id)!),
     })),
   };
+  delete fresh.fontenoy.epic;
   delete fresh.fontenoy.officers;
   delete fresh.fontenoy.aftermath;
   delete fresh.fontenoy.siege.campaign;

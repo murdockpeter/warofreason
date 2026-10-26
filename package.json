@@ -1,6 +1,6 @@
 {
   "name": "maurice-campaign-companion",
-  "version": "0.11.0",
+  "version": "0.12.0",
   "description": "Maurice Fontenoy campaign companion - simultaneous operations and manually adjudicated tactical battles",
   "main": "dist/main/index.cjs",
   "scripts": {

@@ -17,6 +17,7 @@ export default defineConfig({
     'simultaneous-recovery.spec.ts',
     'simultaneous-siege.spec.ts',
     'simultaneous-commanders.spec.ts',
+    'simultaneous-epic.spec.ts',
   ],
   workers: 1,
   timeout: 45000,
