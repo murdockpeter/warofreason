@@ -25,7 +25,9 @@ export const createCampaignSchema = z
   .object({
     title: titleSchema,
     ...audit,
-    profile: z.literal('simultaneous_fontenoy').optional(),
+    profile: z
+      .enum(['simultaneous_fontenoy', 'historical_fontenoy'])
+      .optional(),
   })
   .strict();
 export const renameCampaignSchema = revisionRefSchema.extend({

@@ -18,6 +18,12 @@ export function CampaignDashboard() {
           <div className="button-row">
             <button
               disabled={busy || !library}
+              onClick={() => void state.createHistoricalFontenoy()}
+            >
+              New historical Fontenoy campaign
+            </button>
+            <button
+              disabled={busy || !library}
               onClick={() => {
                 void state.begin('create');
               }}
@@ -197,7 +203,9 @@ export function CampaignDashboard() {
               ? 'Archived record. Clone it to create an editable copy.'
               : active.schemaVersion === 3
                 ? active.fontenoy
-                  ? 'Maurice — Fontenoy, 1745. French 20 / Allied 18, with Dutch and Anglo-Allied rosters, Tournai objectives and simultaneous operations. Maurice is the default tactical game; outcomes remain manual.'
+                  ? active.fontenoy.historicalProfile
+                    ? 'Historical Fontenoy roster: 143 regimental/aggregate records linked to campaign formations, with reported battalion/squadron complements. Review the scenario adaptation before play; existing 38-unit campaigns remain separate.'
+                    : 'Maurice — Fontenoy, 1745. French 20 / Allied 18, with Dutch and Anglo-Allied rosters, Tournai objectives and simultaneous operations. Maurice is the default tactical game; outcomes remain manual.'
                   : 'Earlier operational reference scenario. Create a Fontenoy campaign to use Maurice forces, commanders, geography and objectives.'
                 : active.schemaVersion === 1
                   ? 'Saved legacy draft. Load the Fontenoy module to review its forces and provisional setup.'

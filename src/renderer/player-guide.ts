@@ -1,4 +1,5 @@
 import type { Campaign } from '../domain/campaign';
+import { canAdjudicate } from '../domain/manual-adjudication';
 import type { MapView } from '../domain/operations-schema';
 import type { Screen } from './session';
 import { nextPlayerStep } from './player-help';
@@ -110,6 +111,31 @@ export function playerGuide(
     };
   }
   const umpire = view === 'umpire';
+  if (c.fontenoy?.historicalProfile && !c.fontenoy.historicalProfile.reviewedAt)
+    return {
+      title: 'Review your historical roster before play',
+      text: 'The regiments are assigned to campaign formations. The umpire must review regimental scale, provisional opening positions, source gaps and tabletop ratings before orders can be issued.',
+      stage: 0,
+      choices: [
+        choice(
+          umpire ? 'Review historical roster' : 'Find Umpire map view',
+          umpire
+            ? 'Inspect the linked roster, review the setup and confirm the scenario adaptation.'
+            : 'The umpire reviews this new historical setup before play.',
+          umpire ? 'historical-roster' : 'view',
+        ),
+      ],
+    };
+  const manualChoices =
+    umpire && canAdjudicate(c)
+      ? [
+          choice(
+            'Record an umpire ruling',
+            'Optional: manually update agreed positions, availability or time without movement calculations.',
+            'adjudication',
+          ),
+        ]
+      : [];
   const side = umpire ? planningSide : view;
   const mine = c.submissions.find((s) => s.side === side)!;
   const label = side === 'french' ? 'French' : 'Allied';
@@ -180,6 +206,7 @@ export function playerGuide(
           'Use your side’s preparation controls, then lock its submission.',
           'preparation',
         ),
+        ...manualChoices,
         ...(umpire
           ? [
               choice(
@@ -232,6 +259,7 @@ export function playerGuide(
           ...officerChoices,
           ...epicChoices,
           ...intelligenceChoice,
+          ...manualChoices,
         ],
       };
     return {
@@ -257,6 +285,7 @@ export function playerGuide(
           : officerChoices),
         ...epicChoices,
         ...intelligenceChoice,
+        ...manualChoices,
       ],
     };
   }
@@ -323,32 +352,44 @@ export function playerGuide(
             ),
           ],
         }
-      : waiting(
-          'Both sides have locked orders. The umpire confirms simultaneous movement. Your formations have not moved yet.',
-          2,
-        );
-  if (mine.locked)
+      : {
+          title: 'Next: resolve movement in Umpire view',
+          text: 'Both sides have locked orders. When both players are ready, select Umpire in Map view, then choose Resolve simultaneous movement and confirm. The formations move only after that confirmation.',
+          stage: 2,
+          choices: [
+            choice(
+              'Find Umpire map view',
+              'Show the Map view control. Select Umpire yourself when both players are ready, then review Resolve simultaneous movement.',
+              'view',
+            ),
+          ],
+        };
+  if (mine.locked) {
+    const otherLabel = side === 'french' ? 'Allied' : 'French';
     return {
-      title: `${label} orders are locked`,
-      text: 'Your orders are saved. Wait for the other side to lock its orders; movement starts only after umpire confirmation.',
+      title: `Next: plan ${otherLabel} orders`,
+      text: umpire
+        ? `${label} orders are locked and saved. Select ${otherLabel} in Planning side, issue their orders or leave them empty to hold, then lock ${otherLabel} orders. Once both sides are locked, choose Resolve simultaneous movement and confirm.`
+        : `${label} orders are locked and saved; ${otherLabel} still needs to plan. For local pass-and-play, hand control to the ${otherLabel} player and select ${otherLabel} in Map view. Issue their orders or leave them empty to hold, then lock ${otherLabel} orders. Once both sides are locked, switch Map view to Umpire and choose Resolve simultaneous movement. If someone else is handling ${otherLabel}, wait for them to finish.`,
       stage: 1,
       choices: [
+        choice(
+          umpire
+            ? `Find ${otherLabel} planning`
+            : `Find ${otherLabel} map view`,
+          umpire
+            ? `Show Planning side. Select ${otherLabel} yourself, then plan and lock their orders.`
+            : `Show Map view for the local handoff. Select ${otherLabel} yourself when that player is ready; opening guidance does not reveal their troops.`,
+          umpire ? 'planning-side' : 'view',
+        ),
         choice(
           'Review your saved orders',
           'Read your routes while waiting. Unordered formations hold.',
           'orders',
         ),
-        ...(umpire
-          ? [
-              choice(
-                'Plan for the other side',
-                'Use Planning side to switch to the side that has not locked yet.',
-                'planning-side',
-              ),
-            ]
-          : []),
       ],
     };
+  }
   const canMove = c.corps.some(
     (f) =>
       f.side === side &&
@@ -381,6 +422,7 @@ export function playerGuide(
         'lock',
       ),
       ...intelligenceChoice,
+      ...manualChoices,
       ...(umpire &&
       c.fontenoy &&
       !c.submissions.some((s) => s.locked || s.orders.length)

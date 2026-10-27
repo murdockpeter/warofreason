@@ -1771,6 +1771,32 @@ g[role='button']:focus-visible > .column-marker > .map-column {
   stroke: #ffdd76;
   stroke-width: 4;
   pointer-events: none;
+  stroke-dasharray: 7 4;
+}
+.saved-order-french {
+  --saved-route-color: #315f9b;
+}
+.saved-order-allied {
+  --saved-route-color: #a43b32;
+}
+.saved-order-halo {
+  fill: none;
+  stroke: #fff4dc;
+  stroke-width: 7;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.saved-order-line {
+  fill: none;
+  stroke: var(--saved-route-color);
+  stroke-width: 3.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.saved-order-destination {
+  fill: #fff4dc55;
+  stroke: var(--saved-route-color);
+  stroke-width: 2;
 }
 .hex-counter {
   stroke: #f4e5b8;
@@ -2176,6 +2202,15 @@ g[role='button']:focus-visible > .column-marker > .map-column {
   align-items: center;
   gap: 8px;
 }
+.desk-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  order: 1;
+  flex: 1 0 100%;
+  grid-column: 1 / -1;
+}
 .desk-turnbar {
   order: 0;
   flex: 1 0 100%;
@@ -2527,7 +2562,7 @@ g[role='button']:focus-visible > .column-marker > .map-column {
   .compact-desk .waterloo-desk {
     height: 100%;
     display: grid;
-    grid-template-columns: repeat(6, max-content) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto auto minmax(0, 1fr);
     align-items: stretch;
   }
@@ -2599,4 +2634,85 @@ g[role='button']:focus-visible > .column-marker > .map-column {
     right: 8px;
     width: auto;
   }
+}
+.historical-oob input,
+.historical-oob select {
+  display: block;
+  width: 100%;
+  margin: 0.4rem 0 1rem;
+}
+.historical-oob summary small {
+  font-weight: normal;
+}
+.historical-source-url,
+.historical-oob dd {
+  overflow-wrap: anywhere;
+}
+.manual-placement-preview circle {
+  fill: #bea06c33;
+  stroke: #dfbb7e;
+  stroke-width: 3;
+  stroke-dasharray: 5 3;
+}
+.manual-placement-preview text {
+  fill: #24272a;
+  font-size: 10px;
+  font-weight: 700;
+}
+.manual-adjudication > p {
+  margin-top: 0;
+}
+.manual-adjudication fieldset {
+  margin: 10px 0;
+  padding: 12px;
+  border: 1px solid var(--border-soft);
+}
+.manual-adjudication label {
+  display: grid;
+  gap: 5px;
+  margin: 8px 0;
+}
+.manual-adjudication .check-label {
+  display: flex;
+}
+.manual-adjudication textarea {
+  width: 100%;
+  min-height: 75px;
+}
+.historical-unit-name {
+  background: transparent;
+  border: 0;
+  color: var(--brass-text);
+  padding: 0;
+  text-align: left;
+  text-decoration: underline;
+  cursor: pointer;
+  font-weight: 600;
+}
+.historical-record-dialog .historical-record-complement {
+  font-size: 22px;
+  color: var(--brass-text);
+}
+.waterloo-inspection:has(.historical-unit-name) td {
+  vertical-align: top;
+}
+.historical-review label {
+  display: grid;
+  gap: 5px;
+  margin: 10px 0;
+}
+.historical-review .check-label {
+  display: flex;
+  align-items: flex-start;
+}
+.historical-review textarea {
+  width: 100%;
+  min-height: 80px;
+}
+
+.waterloo-map .historical-counter-kind {
+  font-size: 8px;
+}
+.waterloo-map .historical-counter-size {
+  font-size: 7px;
 }

@@ -1,6 +1,8 @@
 # Maurice Campaign Companion
 
-**Maurice and Fontenoy/Tournai, 1745 remain the core setting.** The C3i rules supply adapted operational mechanics. **0.14.0** opens a map-first desk with side drawers for secondary work, a bottom order tray and compact Helper guidance. Scouting, dated intelligence, commander/Notable management and optional manual Epic Points remain available. Reviewed Tournai siege/victory, per-unit battle aftermath and calendar recovery remain available. Screens/withdrawals, reinforcement timing, own-side overlays and manually adjudicated tactical battles remain available. See [the Fontenoy operational guide](docs/MAURICE_FONTENOY_OPERATIONS.md).
+**Maurice and Fontenoy/Tournai, 1745 remain the core setting.** The C3i rules supply adapted operational mechanics. **0.15.0** adds manual umpire adjudication alongside rules-assisted play. Right-click a formation in Umpire view and choose **Adjudicate manually**, or open the **Adjudication** bottom drawer. Review map/HQ positions, availability, descriptive strength and forward time, then save a reasoned ruling; corrections preserve earlier decisions. See [the manual adjudication guide](docs/MANUAL_ADJUDICATION.md). The map-first desk retains side drawers, a bottom order tray and compact Helper guidance. Scouting, dated intelligence, commander/Notable management and optional manual Epic Points remain available. Reviewed Tournai siege/victory, per-unit battle aftermath and calendar recovery remain available. Screens/withdrawals, reinforcement timing, own-side overlays and manually adjudicated tactical battles remain available. See [the Fontenoy operational guide](docs/MAURICE_FONTENOY_OPERATIONS.md).
+
+For historical names in the playable roster, choose **New historical Fontenoy campaign** on Dashboard, or **Create historical campaign** in the existing formation inspector/Historical OOB drawer. Version **0.16.1** links **143 regimental/aggregate records to provisional campaign formations on a common reported-subunit basis**, including reported battalion/squadron complements, source hierarchy and frozen battle-brief identities. Review the proposed representation, house ratings, provisional deployment and source gaps before play. The new profile starts on **11 May 1745**; existing 38-unit saves remain available. See [the historical formations guide](docs/HISTORICAL_FORMATIONS.md).
 
 Choose **New simultaneous Fontenoy campaign**, or **Create simultaneous Fontenoy copy** from a saved setup. Both use the existing French 20 / Allied 18 Maurice force, Fontenoy-area locations, commanders and Tournai objectives. The earlier Crossroads prototype remains a compatibility/test fixture. Current integration work is tracked in [the Maurice operational TODO](docs/MAURICE_OPERATIONAL_TODO.md).
 
@@ -37,6 +39,8 @@ npm run test:dev
 
 **Helper mode** is on by default; its toggle is in the top bar and remembers your choice in this local app profile. The **What next?** panel explains the current step and offers a few choices: move or hold, lock orders, wait for the other side, resolve movement, review a tabletop result or finish the shared checkpoint.
 
+After locking one side, the helper names the other side to plan next. For local pass-and-play, select that side in **Map view** (or **Planning side** in Umpire view), plan or hold, and lock its orders. Once both sides are locked, choose **Umpire** in Map view and **Resolve simultaneous movement**. Show me highlights the relevant selector without switching sides or submitting anything.
+
 Choose **Show me** to reveal, highlight and focus the relevant controls. This never clicks a campaign action, submits orders, switches faction view or advances time. Use the highlighted control yourself and review its normal confirmation. Open edits take priority so you can finish or cancel them without losing work. Faction views receive waiting guidance when umpire review is needed, without enemy routes or rosters. The helper also guides older Fontenoy setup/play workflows and links to the existing offline manual. Switch it off for a quieter map; this preference is not part of campaign saves/exports.
 
 ## Available screens
@@ -48,6 +52,8 @@ Started campaigns now reopen directly on the map. **Right-click a formation** fo
 Use **ⓘ Help** at the bottom right (or **F1**) for the offline player manual and guidance on what to do next. **Inspect formation** now opens an intelligence modal with composition, readiness, commanders and roster; unknown enemy details stay withheld, and scouting information is labelled with its observation/expiry turn. Selecting a formation also exposes a direct **ⓘ Inspect** button above the map.
 
 Dashboard, Campaign Map, Armies/Columns, Turn Orders, Battle Log, Siege & Victory and Settings. The dashboard manages campaigns, Armies/Columns provides setup review, and Campaign Map provides selectable squares/columns, zoom/pan and route previews on the original 12 × 8 schematic. Turn Orders reviews and issues planned orders before confirmed resolution.
+
+On the simultaneous map, saved move orders remain visible as solid faction-colored arrows with destination rings through planning and locking. A dashed gold line is an unsaved draft. Faction views show their own orders; Umpire sees both sides. Counters stay at their current positions until resolution, when the planning arrows clear.
 
 The existing walkthroughs below use screen names found in **Campaign menu**. Open **Map options & campaign setup** for faction views, and **Orders** for the detailed issue/reopen/resolve controls.
 

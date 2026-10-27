@@ -19,7 +19,7 @@ export const mauriceObservationsSchema = z
           recovery: z.enum(['recover', 'lost']).nullable(),
         }),
       )
-      .max(38),
+      .max(1000),
     armyMorale: z
       .object({
         french: z.number().int().min(0).max(1000).nullable(),
@@ -42,14 +42,14 @@ export const simultaneousAftermathSchema = z
           })
           .strict(),
       )
-      .max(3800),
+      .max(100000),
   })
   .strict();
 export const simultaneousBattleAftermathSchema = z
   .object({
     policy: simultaneousRecoveryPolicySchema,
     appliedVersion: z.number().int().min(1),
-    baseline: z.array(fontenoyUnitSchema).max(38),
+    baseline: z.array(fontenoyUnitSchema).max(1000),
     changes: z
       .array(
         z
@@ -61,7 +61,7 @@ export const simultaneousBattleAftermathSchema = z
           })
           .strict(),
       )
-      .max(38),
+      .max(1000),
   })
   .strict();
 export type SimultaneousRecoveryPolicy = z.infer<

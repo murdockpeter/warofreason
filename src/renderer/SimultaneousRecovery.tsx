@@ -85,6 +85,14 @@ export function SimultaneousRecoveryPanel({
       <summary>
         Maurice unit recovery{strategic ? ' · enabled' : ' · not enabled'}
       </summary>
+      {c.fontenoy?.historicalProfile && (
+        <p>
+          This profile tracks historical regimental/aggregate records. Applying
+          rebuilding or recovery to these records is an agreed scenario
+          adaptation; reported battalion/squadron complements are not
+          automatically converted into Maurice units.
+        </p>
+      )}
       <p>
         Per-unit losses and recovery are reviewed campaign house rules. Tactical
         disruption and Army Morale are battle observations, not persistent

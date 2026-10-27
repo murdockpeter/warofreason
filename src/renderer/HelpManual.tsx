@@ -114,6 +114,14 @@ export function HelpManual({
               Anglo-Allied forces and the campaign around Tournai.
             </li>
             <li>
+              For linked historical regiments, choose Dashboard → New historical
+              Fontenoy campaign. It creates a separate 11 May setup with 143
+              regimental/aggregate records in provisional formations. Review
+              scale, provisional deployment, source gaps and scenario ratings in
+              Historical OOB before play. Existing 38-unit campaigns remain
+              available.
+            </li>
+            <li>
               Optional preparation: enable screening and withdrawal on Campaign
               Map before orders. Each HQ may deploy one ordinary screen outside
               all unit zones; a recalled screen returns next phase. Save/lock

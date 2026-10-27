@@ -13,6 +13,72 @@ import {
 } from './profile';
 
 for (const packaged of [false, true])
+  test(`${packaged ? 'packaged' : 'built'} offline historical OOB reference preserves the playable campaign`, async () => {
+    const profile = testProfile();
+    const repo = new SqliteCampaignRepository(
+      path.join(profile, 'campaigns.sqlite'),
+    );
+    const original = repo.create({
+      title: 'Historical reference acceptance',
+      profile: 'simultaneous_fontenoy',
+      actor: 'Test player',
+      reason: 'Isolated historical reference acceptance.',
+    }).active!;
+    repo.close();
+    let app: ElectronApplication | null = null;
+    try {
+      app = await launchDesktop(profile, packaged);
+      const page = await app.firstWindow();
+      await page.context().setOffline(true);
+      await openDeskDrawer(page, 'Historical OOB');
+      const search = page.getByLabel('Search historical roster');
+      await search.fill('25th Foot');
+      const row = page.locator('.historical-oob details').filter({
+        has: page.locator('summary', { hasText: "Rothe's/Sempill's" }),
+      });
+      await row.locator('summary').click();
+      await expect(row).toContainText('1 battalions');
+      await expect(row).toContainText("Onslow's Brigade");
+      await expect(row).toContainText('dates unverified');
+      await page.getByLabel('Historical contingent').selectOption('british');
+      await closeDeskDrawer(page, 'Historical OOB');
+      await page
+        .getByRole('combobox', { name: 'Map view', exact: true })
+        .selectOption('french');
+      await openDeskDrawer(page, 'Historical OOB');
+      await expect(page.getByLabel('Historical contingent')).toHaveValue('');
+      await search.fill('dillon');
+      await expect(
+        page.locator('.historical-oob summary').filter({ hasText: 'Dillon' }),
+      ).toBeVisible();
+      await page.getByText('Approach to Fontenoy', { exact: true }).click();
+      await expect(page.locator('.historical-oob')).toContainText('1745-05-07');
+      await page
+        .getByText('Sources and unresolved questions', { exact: true })
+        .click();
+      await expect(page.locator('.historical-oob')).toContainText('1380852910');
+      await expect(page.locator('.historical-oob')).toContainText(
+        'CC BY-SA 4.0',
+      );
+      await page.screenshot({
+        path: `test-results/${packaged ? 'packaged' : 'built'}-historical-oob.png`,
+      });
+      await search.focus();
+      await page.keyboard.press('Escape');
+      await expect(
+        page.locator('[data-drawer="Historical OOB"] > summary'),
+      ).toBeFocused();
+      const saved = await page.evaluate(() =>
+        window.desktop.getCampaignLibrary(),
+      );
+      expect(saved.ok && saved.value.active).toEqual(original);
+    } finally {
+      if (app && app.process().exitCode === null) await app.close();
+      removeTestProfile(profile);
+    }
+  });
+
+for (const packaged of [false, true])
   test(`${packaged ? 'packaged' : 'built'} map-first drawers, keyboard dismissal, Helper reveal and retained drafts`, async () => {
     const profile = testProfile();
     const repo = new SqliteCampaignRepository(

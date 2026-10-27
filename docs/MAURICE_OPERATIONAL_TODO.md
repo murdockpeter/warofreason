@@ -36,6 +36,14 @@ Scope corrected on 2026-10-25: Maurice is the default tactical game and Fontenoy
 
 ### Remaining integration work
 
+- [x] Ship the separately reviewed historical regimental profile, linked formation inspection, source complements, assigned-roster lookup, orders and frozen battle briefs. Original 38-unit games remain supported. [Historical formations guide](HISTORICAL_FORMATIONS.md).
+
+- [x] Add a hybrid manual adjudication layer: reviewed map/HQ placement, formation posture/status, descriptive strength, explicit unit availability, forward time/manual movement completion, retained drafts and append-only private ruling/correction history. Guide and boundaries: [Manual adjudication](MANUAL_ADJUDICATION.md).
+- [ ] Extend geography to detailed regional maps with stable location/region references, calibrated scale, terrain/road annotations, region links and pan/zoom. Preserve existing campaign locations, intelligence and frozen battle snapshots when map versions change. Manual adjudication removes the dependency on complete automated movement tables; it does not itself enlarge the map.
+- [ ] Consider discussion-driven AI ruling proposals and online umpire/player permissions as separate integrations; neither is connected by the local manual layer.
+
+- [ ] Remaining historical research after 0.16.0 (143 regimental/aggregate records are linked to playable formations; 0.16.1 uses common grouping targets; full siege/garrison/arrival coverage remains pending): a sourced historical OOB for the full Fontenoy/Tournai campaign, with contemporary unit identities, dated evidence, historical hierarchy and explicitly reviewed mappings to Maurice game units. Preserve the existing 38-unit profile. Scope and delivery checklist: [Historical OOB plan](HISTORICAL_OOB_PLAN.md).
+
 - [x] Carry over commander/Notable management without automating private card rules: opt-in baseline, manual arrivals/details/status/attachments, faction-safe history, frozen briefs and baseline clones.
 - [x] Add optional manual Epic Points with battle/campaign-event entries, null/zero distinction, current-version totals, immutable corrections and faction-safe summaries.
 - [x] Add scouting/intelligence to simultaneous campaigns without automating private card rules: manual area requests, immutable dated releases/corrections, expiry, faction-safe map markers and Helper guidance.
@@ -95,3 +103,19 @@ Acceptance: all 268 unit/integration tests and all 35 built/packaged desktop che
 The normal campaign desk now keeps the map and current phase actions visible, with secondary work in side drawers and route/order work in a bottom tray. Compact Helper guidance opens only when requested. Advanced route fields, rosters, reports, preparation, battle adjudication, siege/recovery, officers, points, charts and history stay available on demand. Closing a drawer preserves edits and restores focus; route trays close when their task ends. Side sheets leave turn controls accessible, and the map reserves space for the bottom tray. The earlier alternating-side map also uses drawers for options, inspection and orders. The manual documents these controls, including simultaneous scouting and report expiry. No campaign mechanics were added in this usability increment.
 
 All 268 unit/integration tests and all 37 built/packaged desktop checks pass. New checks cover map visibility within the desktop viewport, tab order, automatic route/scouting drawers, native draft retention, keyboard dismissal/focus, Helper reveal, inspection and narrow-window bounds. Existing lifecycle, battle, recovery, siege, commander, Epic Point and intelligence workflows pass with real drawer navigation. Development startup with external requests blocked, TypeScript, lint, whole-project formatting, production build and Windows unpacked packaging pass. The packaged layout was visually inspected; a preview is retained in ignored release/ui-review/compact-desk.png. Tests used isolated profiles; no player saves or private source materials changed and no commit/push/publish occurred. Remaining campaign integration and human playtesting items above remain pending.
+
+## 0.15.0 completion evidence - 2026-10-27
+
+The local manual adjudication layer is complete alongside the existing rules-assisted workflow. All 295 unit/integration tests, all 41 built/packaged desktop checks, offline development startup, typecheck, lint, formatting, production build and Windows unpacked packaging pass. Checks include retained/cancelled drafts, stale revisions, exact map changes, unit conservation, private ruling history, append-only corrections, phase handoff, rollback/restart/import/replay, frozen briefs and clean clones. The additional drawer initially exposed a compact-toolbar overlap; wrapping the toolbar resolves it and the full desktop suite passes after the fix. Packaged UI was visually inspected. Human playtesting remains pending. No player saves or private reference files were changed and no commit/push/publish was performed.
+
+Regional map expansion and a playable enlarged historical profile remain separate pending increments.
+
+## 0.16.0 historical formation linkage completion - 2026-10-27
+
+The separate historical profile links 143 regimental/aggregate catalogue records to 14 playable campaign formations. Names, service, reported complements, source hierarchy and reviewed scenario grades appear in inspection and frozen battle briefs; source-reference search locates each assigned formation. Explicit setup review gates play, and historical creation preserves existing 38-unit campaigns. All 308 unit/integration tests (four workers), all 45 built/packaged desktop checks, offline development startup, TypeScript, lint, formatting, production build and Windows unpacked packaging pass. Tests include 55-record engagements, loss/recovery identities, rollback/restart/import/replay/clone and preservation of the old campaign. The packaged historical record dialog was visually inspected. No player saves changed; no commit/push/publish performed.
+
+Full siege/garrison and earlier-arrival research, structured splitting and human tabletop scale/playtesting remain pending; [the profile guide](HISTORICAL_FORMATIONS.md) states the boundaries.
+
+## 0.16.1 comparable formation grouping - 2026-10-27
+
+Retain all 143 historical records while replacing unequal service/arm packing with common provisional reported-subunit targets: 15 French / 13 Allied formations. Add complement badges and artillery labels, faction-filtered counts, and a native-confirmed legacy regroup action restricted to untouched, unreviewed setups. Preserve progressed games and old replay payloads. All 311 unit/integration tests, all 47 built/packaged desktop checks, development startup, typecheck, lint, formatting, build and Windows unpacked packaging pass. Packaged map inspected; player saves unchanged and no commit/push/publish performed.

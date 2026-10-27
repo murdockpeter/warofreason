@@ -1,4 +1,5 @@
 import { seedFontenoy } from './fontenoy';
+import { refreshMauriceRosters } from './simultaneous-aftermath';
 import { seedWaterloo } from './waterloo';
 import { waterlooCampaignSchema } from './waterloo-schema';
 import type { WaterlooCampaign } from './waterloo-schema';
@@ -274,6 +275,21 @@ export function cloneFontenoyOperational(
     })),
   };
   delete fresh.fontenoy.epic;
+  if (fresh.fontenoy.historicalProfile) {
+    fresh.fontenoy.historicalProfile.openingRatings =
+      fresh.fontenoy.historicalProfile.openingRatings.map((r) => ({
+        ...r,
+        unitId: unitIds.get(r.unitId)!,
+      }));
+    fresh.fontenoy.historicalProfile.reviewedAt = null;
+    fresh.fontenoy.historicalProfile.reviewNotes = '';
+    refreshMauriceRosters(fresh, true);
+    fresh.log = [
+      'Fresh historical Fontenoy roster copy. Historical identities and opening ratings retained; review scale, provisional deployment and ratings before play.',
+    ];
+  }
+  for (const f of fresh.corps) delete f.reportedStrength;
+  if (source.adjudications?.length) refreshMauriceRosters(fresh, true);
   delete fresh.fontenoy.intelligence;
   delete fresh.fontenoy.officers;
   delete fresh.fontenoy.aftermath;

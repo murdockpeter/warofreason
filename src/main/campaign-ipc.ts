@@ -101,6 +101,9 @@ export function registerCampaignIpc(
       if (
         [
           'resolve',
+          'manual-adjudication',
+          'historical-roster-review',
+          'historical-regroup',
           'result',
           'approve-result',
           'finalize',

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { historicalIdentitySchema } from './historical-profile-schema';
 import {
   idSchema,
   columnSchema,
@@ -72,6 +73,7 @@ export const fontenoyCommanderSchema = commanderSchema.extend({
   sourceRef: z.string().min(1).max(500),
 });
 export const fontenoyUnitSchema = unitSchema.safeExtend({
+  historical: historicalIdentitySchema.optional(),
   initialQuality: z.enum(['elite', 'trained']).optional(),
   contingent: z.enum(['french', 'dutch', 'anglo_allied']),
   sourceRef: z.string().min(1).max(500),

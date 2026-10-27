@@ -6,6 +6,7 @@ import type {
 import type { SimultaneousRecoveryPolicy } from './simultaneous-aftermath-schema';
 import { recoverUnit } from './unit-recovery';
 import defaults from '../data/aftermath.v0.1.json' with { type: 'json' };
+import { historicalRosterText } from './historical-profile';
 import { unitRecoveryRulesSchema } from './unit-recovery';
 
 export function defaultSimultaneousRecoveryPolicy(
@@ -148,10 +149,21 @@ export function previewMauriceAftermath(
   }
   return changes;
 }
-export function refreshMauriceRosters(c: WaterlooCampaign) {
-  if (!c.fontenoy?.aftermath) return;
+export function refreshMauriceRosters(c: WaterlooCampaign, force = false) {
+  if (
+    !c.fontenoy ||
+    (!c.fontenoy.aftermath &&
+      !c.adjudications?.length &&
+      !c.fontenoy.historicalProfile &&
+      !force)
+  )
+    return;
   for (const link of c.fontenoy.formations) {
     const f = c.corps.find((f) => f.id === link.corpsId)!;
+    if (c.fontenoy.historicalProfile) {
+      f.roster = historicalRosterText(c, link.unitIds);
+      continue;
+    }
     const units = c.fontenoy.units.filter((u) => link.unitIds.includes(u.id));
     f.roster =
       `${units.filter((u) => u.currentStatus === 'ready').length}/${units.length} Maurice units ready. ${units.map((u) => `${u.displayName}: ${u.quality ?? u.type}, ${u.currentStatus}`).join('; ')}`.slice(

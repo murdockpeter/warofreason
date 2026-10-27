@@ -117,7 +117,7 @@ it('tracks selected side, locks and shared resolution without revealing enemy ro
   let c = seed();
   c = step(c, { kind: 'orders', side: 'french', orders: [], lock: true });
   expect(playerGuide(c, 'umpire', 'french', null).title).toBe(
-    'French orders are locked',
+    'Next: plan Allied orders',
   );
   expect(playerGuide(c, 'umpire', 'allied', null).title).toBe(
     'Choose Allied orders',
@@ -140,8 +140,69 @@ it('tracks selected side, locks and shared resolution without revealing enemy ro
     'resolve',
   );
   expect(playerGuide(c, 'french', 'french', null).title).toBe(
-    'Waiting for umpire review',
+    'Next: resolve movement in Umpire view',
   );
+});
+it('guides a local faction handoff by focusing Map view without switching sides or changing the campaign', async () => {
+  const c = step(seed(), {
+    kind: 'orders',
+    side: 'french',
+    orders: [],
+    lock: true,
+  });
+  const before = structuredClone(c),
+    change = vi.fn(),
+    user = userEvent.setup();
+  render(
+    <>
+      <PlayerHelper campaign={c} view="french" onHelp={vi.fn()} />
+      <label>
+        Map view
+        <select data-helper="view" defaultValue="french" onChange={change}>
+          <option value="french">French</option>
+          <option value="allied">Allied</option>
+          <option value="umpire">Umpire</option>
+        </select>
+      </label>
+    </>,
+  );
+  expect(
+    screen.getByRole('region', { name: 'Player helper' }),
+  ).toHaveTextContent('Next: plan Allied orders');
+  expect(
+    screen.getByRole('region', { name: 'Player helper' }),
+  ).toHaveTextContent('leave them empty to hold');
+  await user.click(
+    screen.getByRole('button', { name: 'Show me: Find Allied map view' }),
+  );
+  expect(screen.getByRole('combobox', { name: 'Map view' })).toHaveFocus();
+  expect(screen.getByRole('combobox', { name: 'Map view' })).toHaveValue(
+    'french',
+  );
+  expect(change).not.toHaveBeenCalled();
+  expect(c).toEqual(before);
+});
+it('names the correct other side when Allied orders are locked first', () => {
+  const c = step(seed(), {
+    kind: 'orders',
+    side: 'allied',
+    orders: [],
+    lock: true,
+  });
+  expect(playerGuide(c, 'allied', 'french', null)).toMatchObject({
+    title: 'Next: plan French orders',
+    choices: [
+      expect.objectContaining({
+        label: 'Find French map view',
+        target: 'view',
+      }),
+      expect.anything(),
+    ],
+  });
+  expect(playerGuide(c, 'umpire', 'allied', null).choices[0]).toMatchObject({
+    label: 'Find French planning',
+    target: 'planning-side',
+  });
 });
 it('distinguishes result entry, approval and resuming the clock', () => {
   let c = unitBattleCampaign();

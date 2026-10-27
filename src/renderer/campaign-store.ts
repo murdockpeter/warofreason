@@ -1,3 +1,6 @@
+import type { ManualRuling } from '../domain/manual-adjudication-schema';
+import type { HistoricalReview } from '../domain/historical-profile-schema';
+import { useOperationalSession } from './operational-session';
 import type { EpicInput } from '../domain/simultaneous-epic-schema';
 import type {
   IntelligenceInput,
@@ -36,6 +39,8 @@ import type {
 import type { SimultaneousRecoveryPolicy } from '../domain/simultaneous-aftermath-schema';
 
 export type WaterlooDraft =
+  | { kind: 'historical-review'; review: HistoricalReview }
+  | { kind: 'adjudication'; input: ManualRuling; targetCorpsId: string | null }
   | { kind: 'scout-request'; input: ReconnaissanceInput }
   | {
       kind: 'intelligence-report';
@@ -88,6 +93,7 @@ export type CampaignDraft = DraftFields & {
 interface CampaignSession {
   waterlooDraft: WaterlooDraft | null;
   createFontenoyOperations(): Promise<void>;
+  createHistoricalFontenoy(): Promise<void>;
   copyFontenoyOperations(): Promise<void>;
   commitWaterloo(command: WaterlooCommand): Promise<void>;
   commitAftermath(command: AftermathCommand): Promise<void>;
@@ -200,6 +206,20 @@ export const useCampaigns = create<CampaignSession>((set, get) => {
   }
   return {
     waterlooDraft: null,
+    async createHistoricalFontenoy() {
+      const original = get().library?.active?.id;
+      await guarded(() =>
+        window.desktop.createCampaign({
+          title: 'Fontenoy, 11 May 1745 — historical regimental roster',
+          profile: 'historical_fontenoy',
+          actor: 'Local umpire',
+          reason:
+            'Created a separate historical regimental campaign for umpire setup; existing campaigns preserved.',
+        }),
+      );
+      if (get().library?.active?.id !== original)
+        useOperationalSession.getState().setView('umpire');
+    },
     async createFontenoyOperations() {
       await guarded(() =>
         window.desktop.createCampaign({
@@ -235,7 +255,14 @@ export const useCampaigns = create<CampaignSession>((set, get) => {
           id: active.id,
           expectedRevision: revision,
           actor: 'Local umpire',
-          reason: `Reviewed ${command.kind} under simultaneous campaign rules.`,
+          reason:
+            command.kind === 'historical-regroup'
+              ? command.regroup.notes
+              : command.kind === 'historical-roster-review'
+                ? command.review.notes.trim().slice(0, 500)
+                : command.kind === 'manual-adjudication'
+                  ? command.ruling.decision.trim().slice(0, 500)
+                  : `Reviewed ${command.kind} under simultaneous campaign rules.`,
           command,
         }),
       );

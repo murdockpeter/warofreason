@@ -5,6 +5,54 @@ import { battleReviewed, engagementSettled } from '../domain/aftermath-state';
 
 export const helpTopics = [
   {
+    id: 'historical-formations',
+    title: 'Playable historical formations and regiments',
+    screen: 'Campaign Map',
+    steps: [
+      'Choose Dashboard → New historical Fontenoy campaign, or Create historical campaign from the original formation inspector or Historical OOB drawer. This creates a separate 11 May campaign; your original 38-unit game remains available.',
+      'The historical profile assigns all 143 regimental/aggregate catalogue records to provisional campaign formations. Review the regimental scale, proposed ratings, provisional deployment and source gaps in Historical OOB before issuing orders. Confirm the review in the native dialog.',
+      'Inspect a formation to see real regimental names and reported battalion/squadron complements. Search within the formation, or search Historical OOB and choose Inspect assigned formation. Select a name to open its historical record, with service, source hierarchy, aliases and evidence.',
+      'Orders move the campaign formation containing those records. New battle briefs freeze the names, source references, reported complements and reviewed scenario qualities. Manual availability/loss/recovery keeps the historical identity attached to the same record.',
+    ],
+    notes: [
+      'Each record represents its named historical organization. A four-battalion regiment remains a record reporting four battalions, not four automatically rated Maurice units. Individual subordinate numbers are not invented where the source provides only counts.',
+      'Regular records initially propose trained as a house rating; the umpire can change proposed regular ratings before accepting the setup. Neither fame nor source complement establishes tactical quality. Operational grouping, deployment and tabletop representation are scenario adaptations.',
+      'This is the player-selected 11 May battle baseline, not a complete 1 May campaign return. Siege/garrison forces, arrivals, ambiguous overlaps and conflicting complements remain explicit source gaps. Clones retain identities/opening ratings and require a fresh review.',
+    ],
+  },
+  {
+    id: 'manual-adjudication',
+    title: 'Manual adjudication / Free Kriegsspiel',
+    screen: 'Campaign Map',
+    steps: [
+      'In umpire view, right-click a formation and choose Adjudicate manually, or open the Adjudication drawer for off-map formations and time-only rulings.',
+      'Choose the formation to adjudicate, then click any destination hex or choose its position. Add further formations to resolve several changes or swaps together. Review posture, on-map/off-map status and optional reported strength.',
+      'Expand Unit availability to mark existing game units ready or lost. An eliminated formation needs every unit marked lost; a ready formation needs at least one ready unit. Scheduled recovering units use the existing recovery workflow.',
+      'Optionally place headquarters and record elapsed time within the current phase. Finish movement manually uses the displayed phase end and opens checkpoint review. Explain the agreed ruling, review changes, then confirm the native dialog.',
+      'Read Manual ruling history for the saved before/after record. Record correction to this ruling opens a new decision against the current situation; earlier entries remain unchanged and the clock cannot be rewound.',
+    ],
+    notes: [
+      'Use clear planning before saved/locked orders, or a settled checkpoint before siege review. Resolve outstanding contacts and battles first. Empty preparation can be waived by the ruling; submitted withdrawals must be resolved first.',
+      'This layer bypasses movement costs, terrain restrictions and automatic contact creation. It preserves valid identities, one formation per hex and roster conservation. Adjudicate encounters before placing opposing formations in distinct hexes.',
+      'Reported strength is a descriptive umpire estimate, separate from game-unit availability. Rulings do not calculate combat, recovery, siege or victory. Finish shared phase still applies any enabled policies and next-phase posture resets.',
+      'Only the umpire sees private rationale and ruling history. Formation position, status and reported strength follow the existing faction view. Full JSON backups and journals are umpire documents; local view filters are not online permissions.',
+      'Closing the drawer or opening Help preserves the draft. Discard ruling draft uses the existing discard confirmation. No AI chat or automatic adjudication is connected.',
+    ],
+  },
+  {
+    id: 'historical-oob',
+    title: 'Historical order of battle',
+    screen: 'Campaign Map',
+    steps: [
+      'On the simultaneous Fontenoy map, open Historical OOB. Search by regiment, brigade or source alias, or choose a contingent. Expand an entry for its hierarchy, reported complement and evidence locator.',
+      'Approach to Fontenoy gives dated pre-battle context. Sources and unresolved questions records the Wikipedia baseline, revisions, attribution and gaps. The reference works offline.',
+    ],
+    notes: [
+      'This is a historical reference for 11 May, separate from your playable roster. Battalion and squadron counts do not automatically become Maurice units. Missing strengths and disputed allocations remain unresolved.',
+      'The historical profile, campaign opening deployments, siege allocations and arrivals still require a reviewed adaptation. Reading this drawer never changes your campaign.',
+    ],
+  },
+  {
     id: 'simultaneous-intelligence',
     title: 'Simultaneous scouting & dated reports',
     screen: 'Campaign Map',
@@ -51,6 +99,7 @@ export const helpTopics = [
     notes: [
       'Drag or scroll to pan; Zoom in/out changes scale. Deselect clears the current selection, not staged orders.',
       'The artwork is decorative. Only configured movement edges, blocks and agreed rules affect movement. Contact stops a formation before an occupied enemy square and requires a tabletop battle handoff.',
+      'On the simultaneous map, saved movement orders remain visible as solid faction-colored arrows with destination rings during planning and after locking. Faction views show their own routes; umpire view shows both sides. A dashed gold route is an unsaved draft. Saving does not move the formation; planning arrows clear when resolution starts.',
     ],
   },
   {

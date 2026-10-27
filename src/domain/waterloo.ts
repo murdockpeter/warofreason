@@ -1,3 +1,8 @@
+import { applyManualAdjudication } from './manual-adjudication';
+import {
+  applyHistoricalReview,
+  applyHistoricalRegroup,
+} from './historical-profile';
 import { applyEpicCommand } from './simultaneous-epic';
 import { applyIntelligenceCommand } from './simultaneous-intelligence';
 import { applyCommanderCommand } from './simultaneous-commanders';
@@ -965,7 +970,24 @@ export function applyWaterlooCommand(
       'The campaign has concluded; its strategic record is read-only.',
     );
   const c = structuredClone(input);
+  if (
+    c.fontenoy?.historicalProfile &&
+    !c.fontenoy.historicalProfile.reviewedAt &&
+    !['historical-roster-review', 'historical-regroup'].includes(command.kind)
+  )
+    throw new Error(
+      'Review the historical roster scale, provisional deployment and scenario ratings before campaign actions.',
+    );
   switch (command.kind) {
+    case 'historical-regroup':
+      applyHistoricalRegroup(c, { command, recordId, timestamp });
+      break;
+    case 'historical-roster-review':
+      applyHistoricalReview(c, { command, recordId, timestamp });
+      break;
+    case 'manual-adjudication':
+      applyManualAdjudication(c, { command, recordId, timestamp });
+      break;
     case 'maurice-scout-request':
     case 'maurice-intelligence-report':
       applyIntelligenceCommand(c, { command, recordId, timestamp });

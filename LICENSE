@@ -4,3 +4,12 @@ No permission to use, copy, modify, distribute or sublicense this software is
 granted except by separate written agreement with the copyright holder.
 
 Maurice and third-party materials remain the property of their respective owners.
+
+Exception for the historical reference data:
+The Wikipedia-derived Fontenoy catalogue and approach timeline are distributed
+under Creative Commons Attribution-ShareAlike 4.0 International:
+https://creativecommons.org/licenses/by-sa/4.0/
+The application includes their contributor attribution, source revision links
+and description of adaptations in Historical OOB > Sources and unresolved
+questions. Repository references are recorded in docs/HISTORICAL_OOB_SOURCES.md.
+This exception applies to those data adaptations, not to application code.

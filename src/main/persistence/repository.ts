@@ -1,4 +1,5 @@
 import { DatabaseSync } from 'node:sqlite';
+import { seedHistoricalFontenoy } from '../../domain/fontenoy-historical-profile';
 import { randomUUID } from 'node:crypto';
 import { seedWaterloo, applyWaterlooCommand } from '../../domain/waterloo';
 import {
@@ -435,10 +436,15 @@ export class SqliteCampaignRepository implements CampaignRepository {
     const request = createCampaignSchema.parse(input);
     return this.transaction(() => {
       const now = new Date().toISOString();
-      if (request.profile === 'simultaneous_fontenoy') {
+      if (
+        request.profile === 'simultaneous_fontenoy' ||
+        request.profile === 'historical_fontenoy'
+      ) {
         this.save(
           null,
-          seedFontenoyOperational(request.title, randomUUID, now),
+          request.profile === 'historical_fontenoy'
+            ? seedHistoricalFontenoy(request.title, randomUUID, now)
+            : seedFontenoyOperational(request.title, randomUUID, now),
           'created',
           request.actor,
           request.reason,

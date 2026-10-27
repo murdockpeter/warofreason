@@ -75,18 +75,53 @@ for (const packaged of [false, true])
       await expect(frenchLock).toBeFocused();
       expect(await current(page)).toEqual(opening);
       await frenchLock.click();
-      await expect(helper()).toContainText('French orders are locked');
-      await showHelperChoice(page, 'Show me: Plan for the other side');
+      await expect(page.locator('.compact-helper > summary')).toContainText(
+        'Next: plan Allied orders',
+      );
+      await showHelperChoice(page, 'Show me: Find Allied planning');
       await expect(
         page.getByRole('combobox', { name: 'Planning side', exact: true }),
       ).toBeFocused();
+      await expect(
+        page.getByRole('combobox', { name: 'Planning side', exact: true }),
+      ).toHaveValue('french');
       await page
-        .getByRole('combobox', { name: 'Planning side', exact: true })
+        .getByRole('combobox', { name: 'Map view', exact: true })
+        .selectOption('french');
+      const frenchLocked = await current(page);
+      await showHelperChoice(page, 'Show me: Find Allied map view');
+      await expect(
+        page.getByRole('combobox', { name: 'Map view', exact: true }),
+      ).toBeFocused();
+      await expect(
+        page.getByRole('combobox', { name: 'Map view', exact: true }),
+      ).toHaveValue('french');
+      expect(await current(page)).toEqual(frenchLocked);
+      await page.screenshot({
+        path: `test-results/${packaged ? 'packaged' : 'built'}-orders-handoff.png`,
+      });
+      await page
+        .getByRole('combobox', { name: 'Map view', exact: true })
         .selectOption('allied');
       await expect(helper()).toContainText('Choose Allied orders');
       await page
         .getByRole('button', { name: 'Lock Allied orders', exact: true })
         .click();
+      await expect(page.locator('.compact-helper > summary')).toContainText(
+        'Next: resolve movement in Umpire view',
+      );
+      const beforeUmpire = await current(page);
+      await showHelperChoice(page, 'Show me: Find Umpire map view');
+      await expect(
+        page.getByRole('combobox', { name: 'Map view', exact: true }),
+      ).toBeFocused();
+      await expect(
+        page.getByRole('combobox', { name: 'Map view', exact: true }),
+      ).toHaveValue('allied');
+      expect(await current(page)).toEqual(beforeUmpire);
+      await page
+        .getByRole('combobox', { name: 'Map view', exact: true })
+        .selectOption('umpire');
       await expect(helper()).toContainText(
         'Both sides are ready: resolve movement',
       );

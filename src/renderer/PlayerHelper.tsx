@@ -34,21 +34,25 @@ export function PlayerHelper({
     const kind = store.waterlooDraft.kind;
     draft = {
       target:
-        kind === 'scout-request' || kind === 'intelligence-report'
-          ? 'intelligence'
-          : kind === 'epic'
-            ? 'epic'
-            : kind === 'officer'
-              ? 'officers'
-              : kind === 'route'
-                ? 'route'
-                : kind === 'result'
-                  ? 'result'
-                  : kind === 'withdrawal'
-                    ? 'preparation'
-                    : kind.startsWith('siege')
-                      ? 'siege'
-                      : 'recovery',
+        kind === 'historical-review'
+          ? 'historical-roster'
+          : kind === 'adjudication'
+            ? 'adjudication'
+            : kind === 'scout-request' || kind === 'intelligence-report'
+              ? 'intelligence'
+              : kind === 'epic'
+                ? 'epic'
+                : kind === 'officer'
+                  ? 'officers'
+                  : kind === 'route'
+                    ? 'route'
+                    : kind === 'result'
+                      ? 'result'
+                      : kind === 'withdrawal'
+                        ? 'preparation'
+                        : kind.startsWith('siege')
+                          ? 'siege'
+                          : 'recovery',
       screen: 'Campaign Map',
     };
   } else if (store.setupDraft)

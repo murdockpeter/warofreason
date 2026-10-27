@@ -1,5 +1,53 @@
 # Running implementation checklist
 
+## Comparable historical map formations - 2026-10-27
+
+- [x] Diagnose 3 French versus 11 Allied counters: French infantry/horse were each pooled nationally while Allies were split by service, affecting both map presentation and formation orders.
+- [x] Retain all 143 source records and use common provisional targets of 12 reported battalions / 24 reported squadrons, preserving source-listed brigades and separating uncertain complements. Result: 15 French / 13 Allied formations; this is not a manpower or combat-power equivalence.
+- [x] Add map size badges, artillery labels, faction-filtered formation counts and an explicit preview/confirmed regroup action for untouched, unreviewed old setups. Preserve ongoing games and support old files without a grouping version.
+- [x] Complete 0.16.1 acceptance: all 311 unit/integration tests and all 47 built/packaged desktop checks pass. Offline development startup, TypeScript, lint, formatting, production build and Windows unpacked packaging pass. Regroup coverage includes old payloads without a grouping version, source-brigade preservation, identity/grade conservation, invalid/repeated/progressed requests, replay/import, native cancellation and restart. Packaged map visually inspected at release/ui-review/packaged-regrouped-map.png; packaged attribution/private-research exclusion verified. No player saves changed and no commit/push/publish performed.
+
+## Playable historical formation links - 2026-10-27
+
+- [x] Read the full historical OOB plan and audit fixed 38-unit, clone, frozen-brief, recovery, persistence and source identity boundaries.
+- [x] Add a separate battle-date historical profile with all 143 catalogue regimental/aggregate records assigned exactly once to 14 named campaign formations. Preserve source organization IDs, original service, reported battalion/squadron complements and unknown individual subordinate identifiers.
+- [x] Require explicit review of regimental scale, provisional deployment, source gaps and house tabletop ratings before play; preserve the original 38-unit profile and existing saves. Add creation access from Dashboard and the old formation inspector.
+- [x] Connect historical names, complements, assignment lookup and source hierarchy to formation inspection, orders and frozen battle briefs. Preserve identities across manual outcomes, recovery, imports and fresh clones.
+- [x] Complete 0.16.0 acceptance: all 308 unit/integration tests pass with four workers; all 45 built/packaged desktop checks pass. Offline development startup, TypeScript, lint, formatting, production build and Windows unpacked packaging pass. New coverage includes exact 143-record ownership/assignment, explicit native-confirmed setup review and retained cancellation, source complements/service, searchable formation links, named source-record dialogs, saved named formation orders, immutable 55-record battle briefs, loss/recovery identity retention, transaction rollback/restart/import/replay/tamper rejection and clean clones. The original 38-unit campaign remains unchanged in the actual creation walkthrough. Memoize the static reference catalogue/stabilize its inspection callback to avoid full reference redraws while editing drafts; the final full test run passes. Packaged historical record visually inspected and retained under ignored release/ui-review/historical-formation.png. Packaged attribution/private-research exclusion verified. No player saves changed and no commit/push/publish performed.
+- [ ] Full siege/garrison returns, dated pre-battle arrivals, structured troop splitting and human tabletop scaling/playtesting remain later work.
+
+## Persistent planning routes - 2026-10-27
+
+- [x] Identify disappearing paths: only the active unsaved draft was rendered; saved submissions had no map overlay.
+- [x] Draw saved order segments/destination rings with faction-colored arrows throughout planning/locked phases, including while another formation is selected or a new segment is drafted. Distinguish unsaved drafts with a dashed gold path; hide opposing saved routes/drafts in faction views and remove planning intent after resolution starts.
+- [x] Complete 0.15.2 acceptance: all 300 unit/integration checks pass across the full run (299 pass, one scouting test hits its 5-second time limit) and the targeted intelligence-file rerun (all five pass). All eight relevant built/packaged desktop checks pass: saved segments, independent selection, lock state, restart, faction filtering, order removal, unchanged positions before resolution, cleared planning overlays after resolution, map/drawer interaction and operational planning. TypeScript, lint, formatting, production build and Windows unpacked packaging pass. Packaged arrows visually inspected and retained under ignored release/ui-review/saved-routes.png. No campaign rules or player saves changed and no commit/push/publish performed.
+
+## Actionable order handoff guidance - 2026-10-27
+
+- [x] Reproduce French-view dead end: locked French orders and pending Allied planning only offered saved-order review.
+- [x] Put the next action in the compact helper title; explain the exact other-side planning/view selection, empty hold orders, and umpire resolution handoff. Make Show me focus the appropriate selector without switching views, revealing enemy details or committing an action.
+- [x] Complete 0.15.1 acceptance: all 297 unit/integration tests pass, including both handoff directions and faction privacy. Built and packaged helper walkthroughs pass the French-view handoff, selector focus without automatic view/state changes, Allied empty hold/lock, Umpire selection and confirmed resolution. TypeScript, lint, formatting, production build and Windows unpacked packaging pass. Packaged handoff visually inspected. Guidance only; campaign rules and saved state are unchanged. No player saves changed and no commit/push/publish performed.
+
+## Manual adjudication layer - 2026-10-27
+
+- [x] Audit simultaneous campaign commands, snapshots, recovery/siege dependencies, draft guards, confirmation and portable journal replay. Preserve the earlier historical OOB work in the working tree.
+- [x] Implement reviewed formation/HQ placement, posture, descriptive strength, explicit ready/lost unit availability and forward elapsed time/manual movement completion. Keep identity, ownership, non-stacking, roster conservation and unresolved-work guards; preserve scheduled unit recovery workflow.
+- [x] Add umpire-only right-click access and a map-interactive bottom drawer with preview, retained drafts, native confirmation and append-only correction history. Add helper/manual guidance and faction-safe formation strength display.
+- [x] Complete 0.15.0 acceptance: all 295 unit/integration tests, all 41 built/packaged desktop checks, offline development startup, TypeScript, lint, formatting, production build and Windows unpacked packaging pass. New tests cover manual placement without route calculations, atomic swaps/collisions, coherent formation/unit status, forward time/empty preparation/manual phase completion, pending recoveries, dependent battle corrections, stale drafts, transaction rollback/restart/import/replay/tamper rejection/clean clones, native cancellation, retained navigation drafts, private history, corrections and map updates. Correct the compact toolbar to wrap its drawer buttons without map overlap; all desktop regressions pass after the fix. Packaged preview visually inspected and retained under ignored release/ui-review/manual-adjudication.png. Package attribution/private-research exclusion verified. No player saves changed and no commit/push/publish performed.
+- [x] Document the manual workflow, policy boundaries and regional-map requirements in MANUAL_ADJUDICATION.md, README, architecture/design decisions and the operational TODO. Regional geography, map editing/scale, online permissions and AI chat integration remain separate work.
+- [ ] Human Free Kriegsspiel/Hybrid playtest: exercise real rulings and tune the editor before treating usability as settled.
+
+## Historical OOB implementation - 2026-10-27
+
+- [x] Read the full historical OOB plan and audit exact roster/count/contingent assumptions in current profiles.
+- [x] Obtain public-domain Skrine (1906) and Pajol volume III source text in ignored research storage; locate field/siege distinctions and incompatible totals rather than merging them.
+- [x] Add validated historical catalogue/evidence/hierarchy records with dated identities, source provenance, explicit unknowns and conflict support.
+- [x] Adopt the player-selected Wikipedia OOB baseline instead of waiting for further WDS images. Pin revisions, preserve attribution/licensing and transcribe all five service contingents into 181 organization records (including containers), with 317 source claims.
+- [x] Add a searchable offline Historical OOB drawer, contingent/view filtering, hierarchy paths, source aliases, complement detail and the cited pre-battle approach timeline. Treat supplied WDS trees/map as scenario context, with date/scale/assignments unresolved; bundle no screenshot.
+- [x] Complete 0.14.1 reference-data acceptance: all 281 unit/integration tests pass; the subsequent Help addition passes its 13 targeted checks. TypeScript, lint, whole-project formatting, production build, Windows unpacked packaging and offline development launch pass. All 39 desktop checks pass across the regression run and targeted rerun: correct the new walkthrough?s exact-label selector to use the combobox accessible name; rerun the packaged recovery check after a screenshot-stability timeout. Both built/packaged OOB checks verify offline search, aliases, hierarchy, contingent/view changes, context, attribution, Escape/focus and an unchanged saved campaign. Packaged drawer visually inspected; packaged license attribution and private-research exclusion verified. No player saves changed and no commit/push/publish performed. The playable expanded profile remains pending below.
+- [ ] Reconcile full-campaign dates/siege forces; implement the separate reviewed playable historical profile and formation mapping without rewriting existing saves.
+- [ ] Validate expanded-profile persistence/conservation/frozen briefs/arrivals and conduct human tabletop playtesting when that profile is implemented.
+
 ## Map-first drawers and compact turn interface - 2026-10-26
 
 - [x] Audit simultaneous/legacy map, current controls, draft guards and Helper navigation.

@@ -77,3 +77,35 @@ Faction maps show their own current forces and only current unexpired report sna
 ## 2026-10-26 - map-first drawers
 
 Keep the turn bar and map in the normal page flow. Group optional campaign administration in side drawers; use a bottom tray for route/order work and a compact expandable Helper line. Native details/summary keeps hidden content keyboard-accessible on demand and mounted without losing draft state; closing a sheet never means discarding an action. Use non-modal sheets so map clicks remain available. Keep one open sheet per edge, anchor side sheets below turn controls, and reserve map space for route trays. Saving/cancelling a route or completing a legacy resolution closes the corresponding tray; optional administration remains open until dismissed. Existing domain commands, validation, confirmations, faction projections and persistence remain authoritative.
+
+## 2026-10-27 - historical OOB working baseline
+
+Use the player-selected Wikipedia battle OOB as a working reference, alongside the main battle article for approach context. Further WDS screenshots are optional. Keep the battle-date roster distinct from campaign-opening returns, siege/garrison forces and arrivals; aggregate movements do not establish individual regiment assignments or coordinates. The supplied WDS map is scenario evidence with an unresolved date/scale, not verified operational geography.
+
+Expose a searchable offline reference drawer first. Display source complements and hierarchy without asserting a combined army total or automatically converting battalions/squadrons into Maurice units. Preserve ambiguous allocations and alternative counts, use undated lookup aliases for later British identifiers, and keep all historical-to-game ratings/scaling/deployment work explicitly pending. Document data attribution separately from the application's code license. No current save is rewritten by browsing the catalogue.
+
+## 2026-10-27 - manual adjudication alongside rules-assisted play
+
+Use the same campaign state and validated command journal for rules-assisted and umpire-adjudicated outcomes. `manual-adjudication` records explicit formation/HQ placement, posture, descriptive reported strength, ready/lost availability of existing units and forward time within the present phase. It bypasses route/terrain calculations and automatic contact generation; it does not bypass identity, ownership, conservation, non-stacking or unresolved-work guards. Empty preparation may be waived; submitted preparation must be resolved. Manual phase completion opens the normal checkpoint; enabled siege/recovery policies and next-phase posture resets still require explicit phase finalization. See [Manual adjudication](MANUAL_ADJUDICATION.md).
+
+Keep this layer available to the local umpire without a global mode switch, so rules-assisted turns and manual rulings can coexist. Rulings carry private rationale and before/after evidence; corrections append a new decision against current state. Never rewind the clock or overwrite earlier records. Bind each draft to its starting campaign revision, retain it across navigation/default-Cancel confirmations, and advance the dependency serial on commit. Scheduled unit recoveries retain their existing workflow rather than being silently cancelled. Reported strength is a descriptive estimate, never an inferred Maurice unit count or game modifier.
+
+Manual placement creates a foundation for regional maps, but expanding geography, map scale, region identifiers/links, editing, online authorization and AI discussion integration remain separate work. Keep the current schematic and profile unchanged in this increment.
+
+## 2026-10-27 - actionable order handoffs (0.15.1)
+
+The compact helper must name the next action after an order lock. A locked faction with the other still planning receives the exact other-side Map view handoff; an umpire receives the corresponding Planning side choice. Explain empty hold orders and the subsequent switch to Umpire for Resolve simultaneous movement. When both sides are locked in a faction view, explicitly name the umpire-resolution step instead of a generic waiting state. Show me focuses the selector without changing the selected view, revealing opposing troops or committing an action. Local handoff and a separate opponent's waiting workflow remain explicit choices for the people playing.
+
+## 2026-10-27 - persistent saved planning routes (0.15.2)
+
+Render saved movement intent directly from submissions throughout planning and locked phases, independently of the active draft or selected formation. Show every saved segment with a faction-colored arrow and destination ring; distinguish an unsaved extension with a dashed gold path. Faction views receive only their own saved routes and draft overlays; umpire view sees both submissions. Remove planning arrows when resolution starts so they cannot be mistaken for actual travel or current positions. SVG overlays ignore pointer events and do not change the campaign, route validation, movement timing or journal format.
+
+## 2026-10-27 - connect the historical OOB to playable formations (0.16.0)
+
+Deliver the linkage as a separate historical regimental profile, retaining the original 38-unit Maurice scenario. Give each of the 143 catalogue regimental/aggregate organizations one persistent operational record, assigned once to 14 service/arm campaign formations. Retain reported battalion/squadron complements and source hierarchy without inventing subordinate identifiers or a battalion-to-Maurice-unit ratio. The profile begins on the battle-roster date, 11 May; deployment/grouping and tabletop scale are explicitly provisional.
+
+Regular records propose trained as a house placeholder and permit an umpire to review/change regular ratings before accepting the setup. Never infer elite status from fame or mark the historical adaptation official Maurice. Require explicit scale/deployment/source-gap acknowledgements and a replayable review command before play. Full siege/garrison/pre-battle returns and structured splitting remain separate work. Existing campaigns are preserved; users deliberately create the historical campaign, and clones require a new review. See [Historical formations](HISTORICAL_FORMATIONS.md).
+
+## 2026-10-27 - compare formations on a common grouping basis (0.16.1)
+
+The original historical grouping pooled French infantry and horse nationally while splitting Allied arms by service, producing three versus eleven counters and materially different formation-level command packets. Supersede that default with common reported-subunit targets, preserving whole source brigades and unknown complements, while retaining all 143 organization identities. Do not infer equal manpower or combat power from counter counts. Expose source-size badges and an explicit preview/confirmed regroup action for old untouched setups; preserve progressed games and old journal replay. Deployment remains provisional and requires review.

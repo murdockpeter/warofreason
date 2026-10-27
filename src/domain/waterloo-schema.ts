@@ -1,4 +1,15 @@
 import {
+  historicalProfileSchema,
+  historicalReviewSchema,
+  historicalRegroupSchema,
+} from './historical-profile-schema';
+import { historicalProfileIssues } from './historical-profile';
+import {
+  manualRecordSchema,
+  manualRulingSchema,
+} from './manual-adjudication-schema';
+import { manualRecordIssues } from './manual-adjudication';
+import {
   intelligenceLedgerSchema,
   intelligenceCommandSchema,
 } from './simultaneous-intelligence-schema';
@@ -66,6 +77,7 @@ export const corpsSchema = z
     status: z.enum(['ready', 'blown', 'eliminated', 'reserve']),
     returnSlot: minute.nullable(),
     roster: z.string().max(4000),
+    reportedStrength: z.string().trim().min(1).max(200).optional(),
     availableAt: minute,
     detachment: z
       .object({
@@ -295,6 +307,7 @@ export const waterlooCampaignSchema = z
     battles: z.array(waterlooBattleSchema).max(100),
     log: z.array(z.string().max(500)).max(3000),
     effectSerial: minute,
+    adjudications: z.array(manualRecordSchema).min(1).max(500).optional(),
     preparation: preparationSchema.optional(),
     fontenoy: z
       .object({
@@ -312,7 +325,8 @@ export const waterlooCampaignSchema = z
               .strict(),
           )
           .length(2),
-        units: z.array(fontenoyUnitSchema).length(38),
+        units: z.array(fontenoyUnitSchema).min(1).max(1000),
+        historicalProfile: historicalProfileSchema.optional(),
         commanders: z.array(fontenoyCommanderSchema),
         officers: simultaneousCommandersSchema.optional(),
         epic: epicLedgerSchema.optional(),
@@ -358,6 +372,7 @@ export const waterlooCampaignSchema = z
       ctx.addIssue({ code: 'custom', message });
     const hexes = new Set(c.hexes.map((h) => h.id));
     const corps = new Set(c.corps.map((f) => f.id));
+    for (const message of manualRecordIssues(c)) issue(message);
     if (
       (c.moduleId === 'fontenoy-operational') !== !!c.fontenoy ||
       (c.moduleId === 'fontenoy-operational') !==
@@ -365,6 +380,7 @@ export const waterlooCampaignSchema = z
     )
       issue('Operational setting and rules profile must agree.');
     if (c.fontenoy) {
+      for (const message of historicalProfileIssues(c)) issue(message);
       for (const message of commanderRecordIssues(c)) issue(message);
       for (const message of epicLedgerIssues(c)) issue(message);
       for (const message of intelligenceIssues(c)) issue(message);
@@ -470,6 +486,7 @@ export const waterlooCampaignSchema = z
       }
       for (const group of fontenoyFacts.unitGroups)
         if (
+          !c.fontenoy.historicalProfile &&
           c.fontenoy.units.filter(
             (u) =>
               u.contingent === group.contingent &&
@@ -485,21 +502,23 @@ export const waterlooCampaignSchema = z
         assigned = m.formations.flatMap((f) => f.unitIds),
         commanders = m.formations.flatMap((f) => f.commanderIds);
       if (
-        new Set(unitIds).size !== 38 ||
-        new Set(assigned).size !== 38 ||
-        assigned.length !== 38 ||
+        (!m.historicalProfile && unitIds.length !== 38) ||
+        new Set(unitIds).size !== unitIds.length ||
+        new Set(assigned).size !== unitIds.length ||
+        assigned.length !== unitIds.length ||
         assigned.some((id) => !unitIds.includes(id)) ||
         m.formations.length !==
           c.corps.filter((f) => f.kind !== 'detachment').length ||
         new Set(m.formations.map((f) => f.corpsId)).size !== m.formations.length
       )
         issue(
-          'The Fontenoy operational roster must assign its 38 Maurice units exactly once.',
+          'The Fontenoy operational roster must assign all profile units exactly once (38 in the original Maurice profile).',
         );
       if (
-        m.units.filter((u) => u.contingent === 'french').length !== 20 ||
-        m.units.filter((u) => u.contingent === 'dutch').length !== 7 ||
-        m.units.filter((u) => u.contingent === 'anglo_allied').length !== 11
+        !m.historicalProfile &&
+        (m.units.filter((u) => u.contingent === 'french').length !== 20 ||
+          m.units.filter((u) => u.contingent === 'dutch').length !== 7 ||
+          m.units.filter((u) => u.contingent === 'anglo_allied').length !== 11)
       )
         issue('Retain French 20 and Allied 18 (Dutch 7 / Anglo-Allied 11).');
       if (
@@ -629,6 +648,10 @@ export const waterlooCampaignSchema = z
                       original.type === u.type &&
                       original.contingent === u.contingent &&
                       original.factionId === u.factionId &&
+                      original.historical?.organizationId ===
+                        u.historical?.organizationId &&
+                      original.historical?.catalogueVersion ===
+                        u.historical?.catalogueVersion &&
                       (original.initialQuality ?? original.quality) ===
                         (u.initialQuality ?? u.quality),
                   ),
@@ -667,6 +690,7 @@ export const waterlooCampaignSchema = z
       ...c.corps.map((f) => f.id),
       ...c.hqs.map((h) => h.id),
       ...c.battles.map((b) => b.id),
+      ...(c.adjudications ?? []).map((r) => r.id),
       ...(c.fontenoy
         ? [
             ...c.fontenoy.factions,
@@ -929,6 +953,24 @@ export type WaterlooMarch = z.infer<typeof marchSchema>;
 export type ReinforcementEstimate = z.infer<typeof reinforcementSchema>;
 export type WithdrawalOrder = z.infer<typeof withdrawalOrderSchema>;
 export const waterlooCommandSchema = z.discriminatedUnion('kind', [
+  z
+    .object({
+      kind: z.literal('historical-regroup'),
+      regroup: historicalRegroupSchema,
+    })
+    .strict(),
+  z
+    .object({
+      kind: z.literal('historical-roster-review'),
+      review: historicalReviewSchema,
+    })
+    .strict(),
+  z
+    .object({
+      kind: z.literal('manual-adjudication'),
+      ruling: manualRulingSchema,
+    })
+    .strict(),
   z.object({ kind: z.literal('maurice-epic-enable') }).strict(),
   epicCommandSchema,
   ...intelligenceCommandSchema.options,
