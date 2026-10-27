@@ -2,6 +2,7 @@ import type { Campaign } from '../domain/campaign';
 import type { MapView } from '../domain/operations-schema';
 import type { Screen } from './session';
 import { nextPlayerStep } from './player-help';
+import { canRequestScouting } from '../domain/simultaneous-intelligence';
 
 export type GuideChoice = {
   label: string;
@@ -112,6 +113,27 @@ export function playerGuide(
   const side = umpire ? planningSide : view;
   const mine = c.submissions.find((s) => s.side === side)!;
   const label = side === 'french' ? 'French' : 'Allied';
+  const pendingScouting = (c.fontenoy?.intelligence?.requests ?? []).some(
+    (r) =>
+      r.turn === c.turn &&
+      !c.fontenoy!.intelligence!.reports.some((p) => p.requestId === r.id),
+  );
+  const intelligenceChoice =
+    c.fontenoy &&
+    (c.corps.some((f) => f.side === side && canRequestScouting(c, f)) ||
+      c.fontenoy.intelligence?.requests.some((r) => umpire || r.side === side))
+      ? [
+          choice(
+            umpire && pendingScouting
+              ? 'Review scouting requests'
+              : 'Review scouting and intelligence',
+            umpire
+              ? 'Optional: release manually agreed reports before resolution. Unanswered requests do not block the phase.'
+              : 'Request reconnaissance around a hex before locking, or inspect dated reports. Enemy positions are not live tracking.',
+            'intelligence',
+          ),
+        ]
+      : [];
   const waiting = (text: string, stage: number): PlayerGuide => ({
     title: 'Waiting for umpire review',
     text,
@@ -209,6 +231,7 @@ export function playerGuide(
           ),
           ...officerChoices,
           ...epicChoices,
+          ...intelligenceChoice,
         ],
       };
     return {
@@ -233,6 +256,7 @@ export function playerGuide(
             ]
           : officerChoices),
         ...epicChoices,
+        ...intelligenceChoice,
       ],
     };
   }
@@ -356,6 +380,7 @@ export function playerGuide(
         'Lock when ready. Locking saves your choices; it does not move troops. An empty submission means hold.',
         'lock',
       ),
+      ...intelligenceChoice,
       ...(umpire &&
       c.fontenoy &&
       !c.submissions.some((s) => s.locked || s.orders.length)

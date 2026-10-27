@@ -8,6 +8,8 @@ import {
   navigateTo,
   removeTestProfile,
   testProfile,
+  showHelperChoice,
+  openPlayerHelper,
 } from './profile';
 async function current(page: Page) {
   const result = await page.evaluate(() => window.desktop.getCampaignLibrary());
@@ -48,12 +50,7 @@ for (const packaged of [false, true])
       let page = await app.firstWindow();
       await page.context().setOffline(true);
       const panel = () => page.locator('[data-helper="officers"]');
-      await page
-        .getByRole('button', {
-          name: 'Show me: Review commanders and Notables',
-          exact: true,
-        })
-        .click();
+      await showHelperChoice(page, 'Show me: Review commanders and Notables');
       await expect(panel()).toHaveAttribute('open');
       await expect(panel().locator(':scope > summary')).toBeFocused();
       await expect(
@@ -97,12 +94,7 @@ for (const packaged of [false, true])
         .getByLabel('Decision explanation', { exact: true })
         .fill('Arrival manually agreed by both players.');
       await navigateTo(page, 'Settings');
-      await page
-        .getByRole('button', {
-          name: 'Show me: Return to your edit',
-          exact: true,
-        })
-        .click();
+      await showHelperChoice(page, 'Show me: Return to your edit');
       await expect(
         page.getByLabel('Private Notable reference', { exact: true }),
       ).toHaveValue('Private player card reference');
@@ -174,6 +166,7 @@ for (const packaged of [false, true])
           exact: true,
         })
         .click();
+      await openPlayerHelper(page);
       await expect(
         page.getByRole('button', {
           name: 'Show me: Review commander outcomes',

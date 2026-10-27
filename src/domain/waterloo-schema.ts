@@ -1,4 +1,9 @@
 import {
+  intelligenceLedgerSchema,
+  intelligenceCommandSchema,
+} from './simultaneous-intelligence-schema';
+import { intelligenceIssues } from './simultaneous-intelligence';
+import {
   epicLedgerSchema,
   epicCommandSchema,
 } from './simultaneous-epic-schema';
@@ -311,6 +316,7 @@ export const waterlooCampaignSchema = z
         commanders: z.array(fontenoyCommanderSchema),
         officers: simultaneousCommandersSchema.optional(),
         epic: epicLedgerSchema.optional(),
+        intelligence: intelligenceLedgerSchema.optional(),
         formations: z.array(
           z
             .object({
@@ -361,6 +367,7 @@ export const waterlooCampaignSchema = z
     if (c.fontenoy) {
       for (const message of commanderRecordIssues(c)) issue(message);
       for (const message of epicLedgerIssues(c)) issue(message);
+      for (const message of intelligenceIssues(c)) issue(message);
       const siege = c.fontenoy.siege,
         state = siege.campaign;
       if (state) {
@@ -924,6 +931,7 @@ export type WithdrawalOrder = z.infer<typeof withdrawalOrderSchema>;
 export const waterlooCommandSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('maurice-epic-enable') }).strict(),
   epicCommandSchema,
+  ...intelligenceCommandSchema.options,
   z.object({ kind: z.literal('maurice-commanders-enable') }).strict(),
   z
     .object({

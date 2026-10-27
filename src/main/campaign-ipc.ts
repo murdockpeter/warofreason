@@ -112,6 +112,8 @@ export function registerCampaignIpc(
           'maurice-commanders-enable',
           'maurice-epic-enable',
           'maurice-epic-record',
+          'maurice-scout-request',
+          'maurice-intelligence-report',
           'maurice-commander',
           'maurice-siege-policy',
           'maurice-siege-review',

@@ -48,97 +48,149 @@ export function HelpManual({
         {hasDraft && (
           <p>You have unsaved edits. Reading Help preserves them.</p>
         )}
-        <ol>
-          {campaign.fontenoy && (
+        <h3>The map desk</h3>
+        <p>
+          The map and current turn controls stay visible. Expand “What next?”
+          for guidance, then choose Show me to open and focus the right control.
+        </p>
+        <ul>
+          <li>
+            <b>Orders</b> opens the bottom tray. Select a formation and adjacent
+            hexes, then save its route. Travel mode, departure time and HQ are
+            under Route options.
+          </li>
+          <li>
+            <b>Formation</b> holds the selected roster. Right-click a counter
+            for Inspect formation, Move on map or Scout an area.
+          </li>
+          <li>
+            <b>Intelligence</b> holds scouting requests and dated reports.{' '}
+            <b>Turn desk</b> holds preparation, contacts, battle briefs and
+            manual results.
+          </li>
+          <li>
+            <b>Campaign tools</b> holds siege, recovery, officers, Epic Points,
+            HQs, charts and history. <b>Map options</b> holds overlays and
+            backdrop controls.
+          </li>
+        </ul>
+        <p>
+          Back to map or Escape closes a drawer without discarding an edit.
+          Reopen its tab to continue; map clicks still work while a drawer is
+          open. The order tray closes when its route is saved or cancelled. F1
+          opens this manual.
+        </p>
+        <details>
+          <summary>Scouting and dated intelligence</summary>
+          <ol>
+            {helpTopics
+              .find((t) => t.id === 'simultaneous-intelligence')!
+              .steps.map((step) => (
+                <li key={step}>{step}</li>
+              ))}
+          </ol>
+          {helpTopics
+            .find((t) => t.id === 'simultaneous-intelligence')!
+            .notes.map((note) => (
+              <p key={note}>{note}</p>
+            ))}
+        </details>
+        <details>
+          <summary>Detailed turn and campaign reference</summary>
+          <ol>
+            {campaign.fontenoy && (
+              <li>
+                During clear planning, open Maurice unit recovery and
+                review/enable its policy. One old recovery turn defaults to{' '}
+                {campaign.fontenoy.sourceSchedule.daysPerTurn * 24} calendar
+                hours, based on the saved campaign schedule—not one AM/PM phase.
+                Agree the conversion and rebuilding variants before battle.
+              </li>
+            )}
             <li>
-              During clear planning, open Maurice unit recovery and
-              review/enable its policy. One old recovery turn defaults to{' '}
-              {campaign.fontenoy.sourceSchedule.daysPerTurn * 24} calendar
-              hours, based on the saved campaign schedule—not one AM/PM phase.
-              Agree the conversion and rebuilding variants before battle.
+              Use Dashboard → New simultaneous Fontenoy campaign, or create a
+              simultaneous copy from your saved Fontenoy setup. Maurice and
+              Fontenoy in 1745 remain the setting, with French, Dutch and
+              Anglo-Allied forces and the campaign around Tournai.
             </li>
-          )}
-          <li>
-            Use Dashboard → New simultaneous Fontenoy campaign, or create a
-            simultaneous copy from your saved Fontenoy setup. Maurice and
-            Fontenoy in 1745 remain the setting, with French, Dutch and
-            Anglo-Allied forces and the campaign around Tournai.
-          </li>
-          <li>
-            Optional preparation: enable screening and withdrawal on Campaign
-            Map before orders. Each HQ may deploy one ordinary screen outside
-            all unit zones; a recalled screen returns next phase. Save/lock both
-            sides’ withdrawals (or empty holds), then review and resolve them
-            together. Withdrawn corps hold for the phase. Own control, influence
-            and HQ command overlays help plan legal routes.
-          </li>
-          <li>
-            Select a side or use umpire view. Select a friendly corps, then
-            adjacent hexes. Save a movement segment; a corps can have up to
-            three. Road-only segments must remain on connected roads.
-          </li>
-          <li>
-            Save and lock both sides independently. Unordered corps hold. The
-            umpire resolves both sides on one shared five-minute clock.
-          </li>
-          <li>
-            At a contact, record a stand-off or declare a tactical battle.
-            Review potential nearby reinforcements; committing reserves the
-            corps. Arrival windows are conditional estimates, with optional
-            tactical-turn conversion.
-          </li>
-          <li>
-            Play any tactical game. Enter the actual result, arrivals, losses,
-            readiness and post-battle hexes. Confirm the result, approve
-            campaign effects, then resume movement to apply them at battle end.
-          </li>
-          <li>
-            Confirmed results can be corrected through a new revision.
-            Already-applied effects can be compensated only when later movement
-            does not depend on them.
-          </li>
-          <li>
-            Finish the shared phase after all reviews. In the next phase,
-            reposition HQs and review due blown returns before orders. Save a
-            full JSON backup from Dashboard.
-          </li>
-        </ol>
-        <p>
-          AM 06:00–12:00; PM 12:00–18:00. Original movement and timing charts
-          are available on the campaign map. Maurice is the default tactical
-          game; other results can be entered manually. With unit recovery
-          enabled, record every frozen unit’s outcome, optional disruption/Army
-          Morale and explicit broken-unit decisions. Approval plus battle-end
-          resolution applies losses/rebuilding; Finish shared phase processes
-          due returns. Units keep conscript quality when rebuilt. Correct
-          results before later movement or phase changes depend on them. For
-          siege play, open Tournai, then Siege rules and checkpoint history to
-          review and enable the provisional policy during clear planning. At
-          each checkpoint, Review siege checkpoint: attest investment, supply,
-          relief and separate campaign exhaustion for the displayed calendar
-          interval. Add an explanation and confirm. Preview the effects, then
-          Finish shared phase to apply progress and evaluate victory together.
-          Eligible calendar hours carry forward; AM/PM phases are not source
-          campaign turns. A recorded campaign outcome ends strategic play;
-          history and exports remain available.
-        </p>
-        <p>
-          Commanders and Notables are under the collapsed Commanders &amp;
-          Notables panel. Enable management during clear planning to preserve
-          the current roster as a setup-clone baseline. Record arrivals,
-          names/private references, status and own-side attachments with an
-          explanation. Attachments require clear planning; other decisions can
-          also follow a settled battle at a checkpoint, before siege review.
-          Lost/retired officers detach; restoring active status leaves them
-          unassigned. Earlier battle briefs stay frozen. Card effects and HQ
-          ratings remain manual. For optional Epic Points, expand the Epic
-          Points panel and enable manual tracking during clear planning or a
-          settled checkpoint. Record reviewed battle values or a campaign event.
-          Blank means not recorded; zero is explicit. Correct an entry with a
-          reason; only its latest version counts in totals. Enter final-phase
-          points before campaign conclusion. Scoring does not change siege,
-          exhaustion or victory. Scouting integration remains pending.
-        </p>
+            <li>
+              Optional preparation: enable screening and withdrawal on Campaign
+              Map before orders. Each HQ may deploy one ordinary screen outside
+              all unit zones; a recalled screen returns next phase. Save/lock
+              both sides’ withdrawals (or empty holds), then review and resolve
+              them together. Withdrawn corps hold for the phase. Own control,
+              influence and HQ command overlays help plan legal routes.
+            </li>
+            <li>
+              Select a side or use umpire view. Select a friendly corps, then
+              adjacent hexes. Save a movement segment; a corps can have up to
+              three. Road-only segments must remain on connected roads.
+            </li>
+            <li>
+              Save and lock both sides independently. Unordered corps hold. The
+              umpire resolves both sides on one shared five-minute clock.
+            </li>
+            <li>
+              At a contact, record a stand-off or declare a tactical battle.
+              Review potential nearby reinforcements; committing reserves the
+              corps. Arrival windows are conditional estimates, with optional
+              tactical-turn conversion.
+            </li>
+            <li>
+              Play any tactical game. Enter the actual result, arrivals, losses,
+              readiness and post-battle hexes. Confirm the result, approve
+              campaign effects, then resume movement to apply them at battle
+              end.
+            </li>
+            <li>
+              Confirmed results can be corrected through a new revision.
+              Already-applied effects can be compensated only when later
+              movement does not depend on them.
+            </li>
+            <li>
+              Finish the shared phase after all reviews. In the next phase,
+              reposition HQs and review due blown returns before orders. Save a
+              full JSON backup from Dashboard.
+            </li>
+          </ol>
+          <p>
+            AM 06:00–12:00; PM 12:00–18:00. Original movement and timing charts
+            are available on the campaign map. Maurice is the default tactical
+            game; other results can be entered manually. With unit recovery
+            enabled, record every frozen unit’s outcome, optional
+            disruption/Army Morale and explicit broken-unit decisions. Approval
+            plus battle-end resolution applies losses/rebuilding; Finish shared
+            phase processes due returns. Units keep conscript quality when
+            rebuilt. Correct results before later movement or phase changes
+            depend on them. For siege play, open Tournai, then Siege rules and
+            checkpoint history to review and enable the provisional policy
+            during clear planning. At each checkpoint, Review siege checkpoint:
+            attest investment, supply, relief and separate campaign exhaustion
+            for the displayed calendar interval. Add an explanation and confirm.
+            Preview the effects, then Finish shared phase to apply progress and
+            evaluate victory together. Eligible calendar hours carry forward;
+            AM/PM phases are not source campaign turns. A recorded campaign
+            outcome ends strategic play; history and exports remain available.
+          </p>
+          <p>
+            Commanders and Notables are under the collapsed Commanders &amp;
+            Notables panel. Enable management during clear planning to preserve
+            the current roster as a setup-clone baseline. Record arrivals,
+            names/private references, status and own-side attachments with an
+            explanation. Attachments require clear planning; other decisions can
+            also follow a settled battle at a checkpoint, before siege review.
+            Lost/retired officers detach; restoring active status leaves them
+            unassigned. Earlier battle briefs stay frozen. Card effects and HQ
+            ratings remain manual. For optional Epic Points, expand the Epic
+            Points panel and enable manual tracking during clear planning or a
+            settled checkpoint. Record reviewed battle values or a campaign
+            event. Blank means not recorded; zero is explicit. Correct an entry
+            with a reason; only its latest version counts in totals. Enter
+            final-phase points before campaign conclusion. Scoring does not
+            change siege, exhaustion or victory. Scouting requests and manually
+            released dated reports are available in the Intelligence drawer.
+          </p>
+        </details>
         <button onClick={() => go('Campaign Map')}>Open Campaign Map</button>
       </ReaderDialog>
     );

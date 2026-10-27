@@ -1,4 +1,5 @@
 import { applyEpicCommand } from './simultaneous-epic';
+import { applyIntelligenceCommand } from './simultaneous-intelligence';
 import { applyCommanderCommand } from './simultaneous-commanders';
 import {
   applySiegeCommand,
@@ -965,6 +966,10 @@ export function applyWaterlooCommand(
     );
   const c = structuredClone(input);
   switch (command.kind) {
+    case 'maurice-scout-request':
+    case 'maurice-intelligence-report':
+      applyIntelligenceCommand(c, { command, recordId, timestamp });
+      break;
     case 'maurice-epic-enable':
     case 'maurice-epic-record':
       applyEpicCommand(c, { command, recordId, timestamp });

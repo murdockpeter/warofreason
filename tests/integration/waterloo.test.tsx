@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { WaterlooDesk } from '../../src/renderer/WaterlooDesk';
 import { useCampaigns } from '../../src/renderer/campaign-store';
@@ -12,6 +12,10 @@ const seed = () =>
     '2026-10-25T12:00:00.000Z',
   );
 const originalCommit = useCampaigns.getState().commitWaterloo;
+const openDrawer = (title: string) =>
+  fireEvent.click(
+    screen.getByText(title, { selector: '.desk-drawer > summary' }),
+  );
 beforeEach(() => {
   useCampaigns.setState({
     waterlooDraft: null,
@@ -38,6 +42,7 @@ describe('simultaneous campaign interface', () => {
     useCampaigns.setState({ commitWaterloo: commit });
     const user = userEvent.setup();
     render(<WaterlooDesk campaign={c} />);
+    openDrawer('Turn desk');
     await user.click(
       screen.getByRole('button', {
         name: 'Plan withdrawal for French I Corps',
@@ -70,8 +75,8 @@ describe('simultaneous campaign interface', () => {
     useCampaigns.setState({ commitWaterloo: commit });
     const first = render(<WaterlooDesk campaign={c} />);
     expect(
-      screen.getByRole('button', { name: 'Lock French orders' }),
-    ).toBeDisabled();
+      screen.queryByRole('button', { name: 'Lock French orders' }),
+    ).not.toBeInTheDocument();
     await user.selectOptions(
       screen.getByRole('combobox', { name: 'Planning side' }),
       'allied',
@@ -249,6 +254,7 @@ describe('simultaneous campaign interface', () => {
     await user.click(
       screen.getAllByRole('button', { name: 'Select opposing corps' })[0]!,
     );
+    openDrawer('Formation');
     expect(
       screen.getByText('Composition and readiness withheld.'),
     ).toBeVisible();

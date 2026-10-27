@@ -13,10 +13,12 @@ export function PlayerHelper({
   campaign,
   view,
   onHelp,
+  compact = false,
 }: {
   campaign: Campaign | null;
   view: MapView;
   onHelp(): void;
+  compact?: boolean;
 }) {
   const store = useCampaigns();
   const { screen, navigate } = useSession();
@@ -32,19 +34,21 @@ export function PlayerHelper({
     const kind = store.waterlooDraft.kind;
     draft = {
       target:
-        kind === 'epic'
-          ? 'epic'
-          : kind === 'officer'
-            ? 'officers'
-            : kind === 'route'
-              ? 'route'
-              : kind === 'result'
-                ? 'result'
-                : kind === 'withdrawal'
-                  ? 'preparation'
-                  : kind.startsWith('siege')
-                    ? 'siege'
-                    : 'recovery',
+        kind === 'scout-request' || kind === 'intelligence-report'
+          ? 'intelligence'
+          : kind === 'epic'
+            ? 'epic'
+            : kind === 'officer'
+              ? 'officers'
+              : kind === 'route'
+                ? 'route'
+                : kind === 'result'
+                  ? 'result'
+                  : kind === 'withdrawal'
+                    ? 'preparation'
+                    : kind.startsWith('siege')
+                      ? 'siege'
+                      : 'recovery',
       screen: 'Campaign Map',
     };
   } else if (store.setupDraft)
@@ -125,13 +129,27 @@ export function PlayerHelper({
   }, [enabled, request, screen, signature]);
   if (!enabled) return null;
   const busy = store.pending || store.loading;
-  return (
+  const content = (
     <section className="player-helper" aria-label="Player helper">
       <div className="section-heading">
         <span className="eyebrow">HELPER MODE · WHAT NEXT?</span>
         <button className="secondary" onClick={onHelp}>
           Read the player manual
         </button>
+        {compact && (
+          <button
+            className="secondary"
+            onClick={(e) => {
+              const panel = e.currentTarget.closest('details');
+              if (panel) {
+                panel.open = false;
+                panel.querySelector('summary')?.focus();
+              }
+            }}
+          >
+            Close guidance
+          </button>
+        )}
       </div>
       <div aria-live="polite" aria-atomic="true">
         <h2>{busy ? 'Loading or saving your campaign…' : guide.title}</h2>
@@ -166,6 +184,9 @@ export function PlayerHelper({
               className="secondary"
               disabled={busy}
               onClick={() => {
+                const panel =
+                  document.querySelector<HTMLDetailsElement>('.compact-helper');
+                if (panel) panel.open = false;
                 setRequest({ choice, signature });
                 navigate(choice.screen);
               }}
@@ -183,5 +204,25 @@ export function PlayerHelper({
         </p>
       )}
     </section>
+  );
+  return compact ? (
+    <details
+      className="compact-helper"
+      onKeyDown={(e) => {
+        if (e.key === 'Escape' && !document.querySelector('dialog[open]')) {
+          e.preventDefault();
+          e.currentTarget.open = false;
+          e.currentTarget.querySelector('summary')?.focus();
+        }
+      }}
+    >
+      <summary>
+        What next? <strong>{busy ? 'Saving…' : guide.title}</strong>
+        <span aria-hidden="true">⌄</span>
+      </summary>
+      {content}
+    </details>
+  ) : (
+    content
   );
 }

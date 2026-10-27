@@ -5,6 +5,23 @@ import { battleReviewed, engagementSettled } from '../domain/aftermath-state';
 
 export const helpTopics = [
   {
+    id: 'simultaneous-intelligence',
+    title: 'Simultaneous scouting & dated reports',
+    screen: 'Campaign Map',
+    steps: [
+      'Before locking movement orders, right-click a friendly formation (or Shift+F10), choose Scout an area, click a hex and enter your question. Confirm scouting request saves it; it does not move troops.',
+      'The Scouting & intelligence panel holds requests and reports. Use umpire view to review a current-phase request. Agree eligibility, distance, dice, cards and outcome at the table; none is calculated by the app.',
+      'Release no information, a location, an estimate or identified details. Enter only information approved for the player, set a valid-through phase, add a message and private rationale, then confirm.',
+      'Faction maps show friendly troops and question-mark report markers. Open a marker to inspect its observation date, location and released information. Enemy moves never drag the marker along.',
+      'At settled planning or checkpoint review, the umpire can correct or withdraw a report with a reason, including an older report. Corrections keep its original observation time. Earlier revisions remain in private history. After expiry the marker and observation details are withheld; unanswered requests close when the phase ends.',
+    ],
+    notes: [
+      'Scouting is optional and never blocks locking or finalizing a phase. Finish unresolved contacts and battle reviews before releasing reports at a checkpoint. Requests are available after preparation resolves.',
+      'No information means no intelligence was released; it does not prove the area is empty. Manually entered identified details are snapshots, not a link to the enemy roster.',
+      'Faction views are local pass-and-play filters, not account permissions. Full JSON backups, campaign journals and private report history are umpire documents.',
+    ],
+  },
+  {
     id: 'start',
     title: 'Getting started',
     screen: 'Armies/Columns',

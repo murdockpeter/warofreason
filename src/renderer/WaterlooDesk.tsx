@@ -1,4 +1,12 @@
+import { DeskDrawer } from './DeskDrawer';
 import { SimultaneousEpic } from './SimultaneousEpic';
+import { SimultaneousIntelligence } from './SimultaneousIntelligence';
+import { beginScouting } from './intelligence-session';
+import {
+  canRequestScouting,
+  intelligenceView,
+} from '../domain/simultaneous-intelligence';
+import { ReaderDialog } from './ReaderDialog';
 import { SimultaneousCommanders } from './SimultaneousCommanders';
 import { SimultaneousSiegePanel } from './SimultaneousSiege';
 import { useEffect, useState } from 'react';
@@ -34,13 +42,22 @@ import { mauriceResultDraft } from '../domain/simultaneous-aftermath';
 
 export function WaterlooDesk({ campaign: c }: { campaign: WaterlooCampaign }) {
   const [showBackdrop, setShowBackdrop] = useState(true);
+  const [formationMenu, setFormationMenu] = useState<string | null>(null);
+  const [reportSelection, setReportSelection] = useState<string | null>(null);
+  const [inspectionRequest, setInspectionRequest] = useState(0);
+  const [turnRequest, setTurnRequest] = useState(0);
   const state = useCampaigns();
   const { view, setView } = useOperationalSession();
   const [planningSide, setPlanningSide] = useState<'french' | 'allied'>(() => {
     const draft = useCampaigns.getState().waterlooDraft;
-    return draft && 'corpsId' in draft
-      ? (c.corps.find((f) => f.id === draft.corpsId)?.side ?? 'french')
-      : 'french';
+    const id =
+      draft &&
+      ('corpsId' in draft
+        ? draft.corpsId
+        : draft.kind === 'scout-request'
+          ? draft.input.corpsId
+          : null);
+    return c.corps.find((f) => f.id === id)?.side ?? 'french';
   });
   // Mirror the visible choice for guidance; opening a desk keeps its original defaults.
   useEffect(
@@ -49,7 +66,15 @@ export function WaterlooDesk({ campaign: c }: { campaign: WaterlooCampaign }) {
   );
   const [selected, setSelected] = useState(() => {
     const draft = useCampaigns.getState().waterlooDraft;
-    return draft && 'corpsId' in draft ? draft.corpsId : c.corps[0]!.id;
+    return (
+      (draft &&
+        ('corpsId' in draft
+          ? draft.corpsId
+          : draft.kind === 'scout-request'
+            ? draft.input.corpsId
+            : c.corps[0]!.id)) ||
+      c.corps[0]!.id
+    );
   });
   const [overlay, setOverlay] = useState<
     'none' | 'control' | 'influence' | 'command'
@@ -71,7 +96,23 @@ export function WaterlooDesk({ campaign: c }: { campaign: WaterlooCampaign }) {
     (!c.preparation || c.preparation.resolved);
   const setDraft = (value: typeof state.waterlooDraft) =>
     useCampaigns.setState({ waterlooDraft: value, error: null });
-  const force = c.corps.find((f) => f.id === selected);
+  const force = c.corps.find(
+    (f) =>
+      f.id === selected &&
+      (!c.fontenoy || view === 'umpire' || f.side === view),
+  );
+  const menuForce = c.corps.find(
+    (f) => f.id === formationMenu && (view === 'umpire' || f.side === view),
+  );
+  const reportMarkers =
+    view === 'umpire'
+      ? []
+      : intelligenceView(c, view).filter(
+          (r) => r.observation && r.observation.level !== 'none',
+        );
+  const selectedReport = reportMarkers.find(
+    (r) => r.requestId === reportSelection,
+  );
   const visible = (f: WaterlooCorps) => view === 'umpire' || f.side === view;
   const at = (id: string) => {
     const h = c.hexes.find((h) => h.id === id)!;
@@ -80,7 +121,16 @@ export function WaterlooDesk({ campaign: c }: { campaign: WaterlooCampaign }) {
   const commit = (command: Parameters<typeof state.commitWaterloo>[0]) => {
     void state.commitWaterloo(command);
   };
+  const selectScoutArea = (hexId: string) => {
+    if (state.waterlooDraft?.kind !== 'scout-request') return false;
+    setDraft({
+      ...state.waterlooDraft,
+      input: { ...state.waterlooDraft.input, hexId },
+    });
+    return true;
+  };
   function beginRoute(f: WaterlooCorps) {
+    if (f.hexId && selectScoutArea(f.hexId)) return;
     setSelected(f.id);
     if (
       !editing ||
@@ -145,17 +195,16 @@ export function WaterlooDesk({ campaign: c }: { campaign: WaterlooCampaign }) {
   }
   return (
     <div className="waterloo-desk">
-      <section className="panel" aria-label="Simultaneous campaign controls">
+      <section
+        className="panel desk-turnbar"
+        aria-label="Simultaneous campaign controls"
+      >
         <div className="section-heading">
           <h2>{c.title}</h2>
           <span className="badge">
             {c.phase} · phase {c.turn} · {c.turn % 2 ? 'AM' : 'PM'}
           </span>
         </div>
-        <p>
-          Both sides plan against the same map and clock. Tactical battles use
-          your chosen game; enter their results here.
-        </p>
         {state.error && (
           <p role="alert" className="campaign-error">
             {state.error}
@@ -193,11 +242,6 @@ export function WaterlooDesk({ campaign: c }: { campaign: WaterlooCampaign }) {
             </label>
           )}
         </div>
-        <p>
-          {campaignTime(c, c.cursor)} · weather:{' '}
-          {c.charts.weather.replaceAll('_', ' ')} · phase closes{' '}
-          {campaignTime(c, phaseEnd(c.turn))}
-        </p>
         <p aria-label="Submission readiness">
           French:{' '}
           {c.submissions.find((s) => s.side === 'french')!.locked
@@ -209,8 +253,21 @@ export function WaterlooDesk({ campaign: c }: { campaign: WaterlooCampaign }) {
             : 'planning'}
         </p>
         <div className="button-row">
+          {((c.preparation && !c.preparation.resolved) ||
+            c.phase === 'adjudication') && (
+            <button onClick={() => setTurnRequest((n) => n + 1)}>
+              Review{' '}
+              {c.preparation && !c.preparation.resolved
+                ? 'preparation'
+                : 'contacts & battles'}
+            </button>
+          )}
           <button
             data-helper="lock"
+            hidden={
+              !['planning', 'locked'].includes(c.phase) ||
+              (!!c.preparation && !c.preparation.resolved)
+            }
             disabled={!editing || !!state.waterlooDraft}
             onClick={() =>
               commit({
@@ -229,22 +286,13 @@ export function WaterlooDesk({ campaign: c }: { campaign: WaterlooCampaign }) {
                 disabled={
                   busy ||
                   !!state.waterlooDraft ||
-                  !['planning', 'locked'].includes(c.phase) ||
-                  (!!c.preparation && !c.preparation.resolved)
-                }
-                data-helper="reopen"
-                onClick={() => commit({ kind: 'reset-orders' })}
-              >
-                Reopen both submissions
-              </button>
-              <button
-                disabled={
-                  busy ||
-                  !!state.waterlooDraft ||
                   !c.submissions.every((s) => s.locked) ||
                   c.phase === 'checkpoint'
                 }
                 data-helper="resolve"
+                hidden={
+                  !['locked', 'resolving', 'adjudication'].includes(c.phase)
+                }
                 onClick={() => commit({ kind: 'resolve' })}
               >
                 Resolve simultaneous movement
@@ -258,6 +306,7 @@ export function WaterlooDesk({ campaign: c }: { campaign: WaterlooCampaign }) {
                     !c.fontenoy.siege.campaign.pendingReview)
                 }
                 data-helper="finalize"
+                hidden={c.phase !== 'checkpoint'}
                 onClick={() => commit({ kind: 'finalize' })}
               >
                 Finish shared phase
@@ -266,40 +315,720 @@ export function WaterlooDesk({ campaign: c }: { campaign: WaterlooCampaign }) {
           )}
         </div>
       </section>
-      {c.fontenoy && (
-        <section className="panel" aria-label="Maurice Fontenoy campaign">
-          <h2>Maurice · Fontenoy, 1745</h2>
-          <p>
-            French 20 / Allied 18 · Dutch 7 / Anglo-Allied 11. Tactical play
-            defaults to Maurice; results remain manual and may come from another
-            agreed game.
-          </p>
-          <ul>
-            {c.fontenoy.objectives.map((o) => (
-              <li key={o.side}>
-                {o.side === 'french' ? 'French' : 'Allied'}: {o.title} ·{' '}
-                {c.hexes.find((h) => h.id === o.hexId)?.name || o.hexId}
-              </li>
-            ))}
-          </ul>
-          <p>
-            Tournai siege: {c.fontenoy.siege.status.replaceAll('_', ' ')} ·
-            recorded progress {c.fontenoy.siege.progress}. Review optional
-            recovery and siege policies below. Tactical adjudication remains
-            external.
-          </p>
-        </section>
+      {menuForce && (
+        <ReaderDialog
+          title={`Formation actions · ${menuForce.name}`}
+          onDismiss={() => setFormationMenu(null)}
+        >
+          <div role="menu" aria-label="Formation actions">
+            <button
+              role="menuitem"
+              onClick={() => {
+                setSelected(menuForce.id);
+                setFormationMenu(null);
+                setInspectionRequest((n) => n + 1);
+              }}
+            >
+              Inspect formation
+            </button>
+            <button
+              role="menuitem"
+              disabled={
+                !editing ||
+                !!state.waterlooDraft ||
+                menuForce.side !== side ||
+                menuForce.status !== 'ready' ||
+                menuForce.kind === 'detachment' ||
+                c.preparation?.withdrawnCorpsIds.includes(menuForce.id)
+              }
+              onClick={() => {
+                setFormationMenu(null);
+                beginRoute(menuForce);
+              }}
+            >
+              Move on map
+            </button>
+            <button
+              role="menuitem"
+              disabled={
+                busy ||
+                !!state.waterlooDraft ||
+                menuForce.side !== side ||
+                !canRequestScouting(c, menuForce)
+              }
+              onClick={() => {
+                setFormationMenu(null);
+                beginScouting(c, menuForce.id);
+              }}
+            >
+              Scout an area…
+            </button>
+          </div>
+        </ReaderDialog>
       )}
-      {c.fontenoy && <SimultaneousSiegePanel c={c} view={view} />}
-      {c.fontenoy && <SimultaneousRecoveryPanel c={c} view={view} />}
-      {c.fontenoy && <SimultaneousCommanders c={c} view={view} />}
-      {c.fontenoy && <SimultaneousEpic c={c} view={view} />}
-      <WaterlooPreparation campaign={c} side={side} view={view} />
-      <section
-        className="panel"
-        data-helper="map"
-        aria-label="Hex campaign map"
+      {selectedReport?.observation && (
+        <ReaderDialog
+          title="Dated intelligence"
+          onDismiss={() => setReportSelection(null)}
+        >
+          <p>
+            Observed phase {selectedReport.observedTurn} ·{' '}
+            {campaignTime(c, selectedReport.observedAt!)}. This is a snapshot,
+            not live tracking.
+          </p>
+          {selectedReport.observation.level !== 'none' && (
+            <>
+              <p>
+                Last observed {selectedReport.observation.hexId} · valid through
+                phase {selectedReport.observation.expiresAfterTurn} ·{' '}
+                {selectedReport.observation.level}
+              </p>
+              {selectedReport.observation.level !== 'located' && (
+                <>
+                  <h3>{selectedReport.observation.label}</h3>
+                  <p>{selectedReport.observation.details}</p>
+                </>
+              )}
+            </>
+          )}
+          <p>{selectedReport.observation.notes}</p>
+        </ReaderDialog>
+      )}
+      <DeskDrawer title="Orders" edge="bottom" openWhen={!!draft}>
+        {draft && (
+          <div
+            className="campaign-editor"
+            data-helper="route"
+            aria-label="Hex route draft"
+          >
+            <h3>
+              Route for {c.corps.find((f) => f.id === draft.corpsId)!.name}
+            </h3>
+            <p>{draft.path.join(' → ')}</p>
+            <details className="route-options">
+              <summary>Route options</summary>{' '}
+              <div className="form-grid">
+                <label>
+                  Travel mode
+                  <select
+                    value={draft.roadOnly ? 'road' : 'mixed'}
+                    onChange={(e) =>
+                      setDraft({
+                        ...draft,
+                        roadOnly: e.target.value === 'road',
+                      })
+                    }
+                  >
+                    <option value="road">Connected roads only</option>
+                    <option value="mixed">Off-road / mixed</option>
+                  </select>
+                </label>
+                <label>
+                  Departure (minutes after phase opening)
+                  <input
+                    type="number"
+                    min={0}
+                    max={355}
+                    step={5}
+                    value={draft.startAt - phaseStart(c.turn)}
+                    onChange={(e) =>
+                      setDraft({
+                        ...draft,
+                        startAt: phaseStart(c.turn) + Number(e.target.value),
+                      })
+                    }
+                  />
+                </label>
+                <label>
+                  Command HQ
+                  <select
+                    value={draft.hqId}
+                    onChange={(e) =>
+                      setDraft({ ...draft, hqId: e.target.value })
+                    }
+                  >
+                    {c.hqs
+                      .filter(
+                        (h) =>
+                          h.army ===
+                          c.corps.find((f) => f.id === draft.corpsId)!.army,
+                      )
+                      .map((h) => (
+                        <option key={h.id} value={h.id}>
+                          {h.name} · {h.mode}
+                        </option>
+                      ))}
+                  </select>
+                </label>
+              </div>
+            </details>
+            <div className="button-row">
+              <button
+                disabled={busy || draft.path.length < 2}
+                onClick={saveSegment}
+              >
+                Save movement segment
+              </button>
+              <button
+                className="secondary"
+                disabled={busy || draft.path.length < 2}
+                onClick={() =>
+                  setDraft({ ...draft, path: draft.path.slice(0, -1) })
+                }
+              >
+                Undo route step
+              </button>
+              <button
+                className="secondary"
+                disabled={busy}
+                onClick={() => setDraft(null)}
+              >
+                Cancel route
+              </button>
+            </div>
+          </div>
+        )}
+        {!draft && (
+          <>
+            {' '}
+            <h3 data-helper="orders" tabIndex={-1}>
+              {side === 'french' ? 'French' : alliedLabel} saved orders
+            </h3>
+            {!submission.orders.length && (
+              <p>No movement orders. Unordered corps hold.</p>
+            )}
+            <ul>
+              {submission.orders.map((o) => (
+                <li key={o.corpsId}>
+                  <strong>
+                    {c.corps.find((f) => f.id === o.corpsId)!.name}
+                  </strong>
+                  :{' '}
+                  {o.segments
+                    .map(
+                      (s) =>
+                        `${s.path.join(' → ')} (${s.roadOnly ? 'road' : 'off-road'}, ${campaignTime(c, s.startAt).slice(-5)})`,
+                    )
+                    .join('; ')}{' '}
+                  <form
+                    key={`${o.corpsId}-${o.priority}`}
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      const priority = Number(
+                        new FormData(e.currentTarget).get('priority'),
+                      );
+                      commit({
+                        kind: 'orders',
+                        side,
+                        orders: submission.orders.map((p) =>
+                          p.corpsId === o.corpsId ? { ...p, priority } : p,
+                        ),
+                        lock: false,
+                      });
+                    }}
+                  >
+                    <label>
+                      Friendly route priority (lower first)
+                      <input
+                        name="priority"
+                        type="number"
+                        min={0}
+                        max={1000}
+                        required
+                        defaultValue={o.priority}
+                        disabled={!editing || !!state.waterlooDraft}
+                      />
+                    </label>
+                    <button
+                      className="secondary"
+                      disabled={!editing || !!state.waterlooDraft}
+                    >
+                      Save priority
+                    </button>
+                  </form>
+                  <button
+                    className="secondary"
+                    disabled={!editing || !!state.waterlooDraft}
+                    onClick={() =>
+                      commit({
+                        kind: 'orders',
+                        side,
+                        orders: submission.orders.filter(
+                          (p) => p.corpsId !== o.corpsId,
+                        ),
+                        lock: false,
+                      })
+                    }
+                  >
+                    Remove order
+                  </button>
+                </li>
+              ))}
+            </ul>
+            {view === 'umpire' && (
+              <>
+                {' '}
+                <button
+                  disabled={
+                    busy ||
+                    !!state.waterlooDraft ||
+                    !['planning', 'locked'].includes(c.phase) ||
+                    (!!c.preparation && !c.preparation.resolved)
+                  }
+                  data-helper="reopen"
+                  onClick={() => commit({ kind: 'reset-orders' })}
+                >
+                  Reopen both submissions
+                </button>
+              </>
+            )}
+          </>
+        )}
+      </DeskDrawer>
+      <DeskDrawer title="Formation" openWhen={inspectionRequest}>
+        {' '}
+        {force && (
+          <div className="waterloo-inspection">
+            <h3>{visible(force) ? force.name : 'Opposing corps'}</h3>
+            {c.fontenoy && visible(force) && (
+              <button
+                disabled={!!state.waterlooDraft}
+                onClick={() => setFormationMenu(force.id)}
+              >
+                Formation actions
+              </button>
+            )}
+            <p>
+              {visible(force)
+                ? `${force.army.replaceAll('_', ' ')} · ${force.kind === 'detachment' ? 'stationary' : force.formation} · ${force.status} · ${force.hexId ?? 'off map'}`
+                : 'Composition and readiness withheld.'}
+            </p>
+            {visible(force) && <p>{force.roster}</p>}
+            {visible(force) && c.fontenoy && (
+              <>
+                <p>
+                  Commanders:{' '}
+                  {c.fontenoy.commanders
+                    .filter((commander) =>
+                      c
+                        .fontenoy!.formations.find(
+                          (link) => link.corpsId === force.id,
+                        )
+                        ?.commanderIds.includes(commander.id),
+                    )
+                    .map((commander) => commander.displayName)
+                    .join(', ') || 'None assigned'}
+                </p>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Maurice unit</th>
+                      <th>Type</th>
+                      <th>Quality</th>
+                      <th>Contingent</th>
+                      <th>Readiness</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {c.fontenoy.units
+                      .filter((unit) =>
+                        c
+                          .fontenoy!.formations.find(
+                            (link) => link.corpsId === force.id,
+                          )
+                          ?.unitIds.includes(unit.id),
+                      )
+                      .map((unit) => (
+                        <tr key={unit.id}>
+                          <td>{unit.displayName}</td>
+                          <td>{unit.type.replaceAll('_', ' ')}</td>
+                          <td>{unit.quality ?? '—'}</td>
+                          <td>{unit.contingent.replaceAll('_', ' ')}</td>
+                          <td>{unit.currentStatus}</td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </>
+            )}
+            {visible(force) &&
+              c.preparation?.withdrawnCorpsIds.includes(force.id) && (
+                <p>Withdrawn this phase; holds until the next phase.</p>
+              )}
+            {visible(force) && force.detachment && (
+              <p>
+                Stationary screen of{' '}
+                {
+                  c.corps.find((f) => f.id === force.detachment!.parentCorpsId)
+                    ?.name
+                }
+                . Use preparation to recall or deploy it; allocate its tactical
+                troops from the parent roster.
+              </p>
+            )}
+          </div>
+        )}
+        {!force && <p>Select a friendly formation on the map to inspect it.</p>}
+      </DeskDrawer>
+      <DeskDrawer
+        title="Intelligence"
+        openWhen={
+          state.waterlooDraft?.kind === 'scout-request' ||
+          state.waterlooDraft?.kind === 'intelligence-report'
+        }
       >
+        {' '}
+        {c.fontenoy && (
+          <SimultaneousIntelligence c={c} view={view} side={side} />
+        )}
+      </DeskDrawer>
+      <DeskDrawer
+        title="Turn desk"
+        openWhen={
+          state.waterlooDraft?.kind === 'withdrawal' ||
+          state.waterlooDraft?.kind === 'result' ||
+          turnRequest
+        }
+      >
+        {' '}
+        <WaterlooPreparation campaign={c} side={side} view={view} />
+        {view === 'umpire' ? (
+          <>
+            {' '}
+            <section
+              className="panel"
+              data-helper="battles"
+              aria-label="Pending encounters"
+            >
+              <h2>Contacts and battles</h2>
+              {!c.encounters.some((e) => !e.settled) && (
+                <p>No outstanding contacts.</p>
+              )}
+              {c.encounters
+                .filter((e) => !e.settled && !e.battleId)
+                .map((e) => (
+                  <article key={e.id}>
+                    <h3>
+                      Contact at {e.hexId} · {campaignTime(c, e.at)}
+                    </h3>
+                    <p>
+                      {e.corpsIds
+                        .map((id) => c.corps.find((f) => f.id === id)!.name)
+                        .join(' / ')}
+                    </p>
+                    <p>{e.reason}</p>
+                    <div className="button-row">
+                      <button
+                        disabled={busy || !!state.waterlooDraft}
+                        onClick={() =>
+                          commit({
+                            kind: 'declare-battle',
+                            encounterId: e.id,
+                            title: `Battle at ${e.hexId}`,
+                          })
+                        }
+                      >
+                        Declare tactical battle
+                      </button>
+                      <button
+                        disabled={busy || !!state.waterlooDraft}
+                        className="secondary"
+                        onClick={() =>
+                          commit({ kind: 'stand-off', encounterId: e.id })
+                        }
+                      >
+                        Record stand-off
+                      </button>
+                    </div>
+                  </article>
+                ))}
+              {c.battles.map((b) => (
+                <BattleCard key={b.id} campaign={c} battle={b} />
+              ))}
+            </section>
+          </>
+        ) : (
+          <p>The umpire reviews contacts and tactical results.</p>
+        )}
+      </DeskDrawer>
+      <DeskDrawer
+        title="Campaign tools"
+        openWhen={
+          !!state.waterlooDraft &&
+          [
+            'officer',
+            'epic',
+            'recovery-policy',
+            'siege-policy',
+            'siege-review',
+          ].includes(state.waterlooDraft.kind)
+        }
+      >
+        {' '}
+        {c.fontenoy && (
+          <section className="panel" aria-label="Maurice Fontenoy campaign">
+            <h2>Maurice · Fontenoy, 1745</h2>
+            <p>
+              French 20 / Allied 18 · Dutch 7 / Anglo-Allied 11. Tactical play
+              defaults to Maurice; results remain manual and may come from
+              another agreed game.
+            </p>
+            <ul>
+              {c.fontenoy.objectives.map((o) => (
+                <li key={o.side}>
+                  {o.side === 'french' ? 'French' : 'Allied'}: {o.title} ·{' '}
+                  {c.hexes.find((h) => h.id === o.hexId)?.name || o.hexId}
+                </li>
+              ))}
+            </ul>
+            <p>
+              Tournai siege: {c.fontenoy.siege.status.replaceAll('_', ' ')} ·
+              recorded progress {c.fontenoy.siege.progress}. Review optional
+              recovery and siege policies below. Tactical adjudication remains
+              external.
+            </p>
+          </section>
+        )}
+        {c.fontenoy && <SimultaneousSiegePanel c={c} view={view} />}
+        {c.fontenoy && <SimultaneousRecoveryPanel c={c} view={view} />}
+        {c.fontenoy && <SimultaneousCommanders c={c} view={view} />}
+        {c.fontenoy && <SimultaneousEpic c={c} view={view} />}
+        {view === 'umpire' && (
+          <>
+            {' '}
+            <details className="panel">
+              <summary>Headquarters and due returns</summary>
+              <p>
+                HQ markers express command intent. Place them before saving
+                orders, within three hexes of their army and outside enemy
+                control/influence. Normal mode has greater range; Battle mode
+                supplies briefing context.
+              </p>
+              {c.hqs.map((h) => (
+                <form
+                  key={`${h.id}-${h.hexId}-${h.mode}`}
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    const form = new FormData(e.currentTarget);
+                    commit({
+                      kind: 'place-hqs',
+                      placements: [
+                        {
+                          hqId: h.id,
+                          hexId: String(form.get('hex')),
+                          mode: form.get('mode') as 'normal' | 'battle',
+                        },
+                      ],
+                    });
+                  }}
+                >
+                  <fieldset
+                    disabled={
+                      busy ||
+                      !!state.waterlooDraft ||
+                      c.phase !== 'planning' ||
+                      !preparationIsMutable(c) ||
+                      !!c.preparation?.deploymentHqIds.length ||
+                      c.submissions.some((s) => s.locked || s.orders.length)
+                    }
+                  >
+                    <legend>{h.name}</legend>
+                    <div className="form-grid">
+                      <label>
+                        HQ hex
+                        <select name="hex" defaultValue={h.hexId}>
+                          {c.hexes
+                            .filter((h) => h.terrain !== 'water')
+                            .map((h) => (
+                              <option key={h.id}>{h.id}</option>
+                            ))}
+                        </select>
+                      </label>
+                      <label>
+                        HQ mode
+                        <select name="mode" defaultValue={h.mode}>
+                          <option value="normal">Normal</option>
+                          <option value="battle">Battle</option>
+                        </select>
+                      </label>
+                    </div>
+                    <button>Place {h.name}</button>
+                  </fieldset>
+                </form>
+              ))}
+              {(['french', 'allied'] as const).map((side) => {
+                const due = c.corps.filter(
+                  (f) =>
+                    f.side === side &&
+                    f.status === 'blown' &&
+                    f.returnSlot !== null &&
+                    f.returnSlot <= c.turn,
+                );
+                return due.length ? (
+                  <form
+                    key={side}
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      const form = new FormData(e.currentTarget);
+                      const selected = due.filter(
+                        (f) => form.get(`return-${f.id}`) === 'on',
+                      );
+                      commit({
+                        kind: 'return-corps',
+                        corpsIds: selected.map((f) => f.id),
+                        hexIds: selected.map((f) =>
+                          String(form.get(`hex-${f.id}`)),
+                        ),
+                      });
+                    }}
+                  >
+                    <fieldset
+                      disabled={
+                        busy ||
+                        !!state.waterlooDraft ||
+                        c.phase !== 'planning' ||
+                        !preparationIsMutable(c) ||
+                        !!c.preparation?.deploymentHqIds.length ||
+                        c.submissions.some((s) => s.locked || s.orders.length)
+                      }
+                    >
+                      <legend>{side} due returns</legend>
+                      <p>
+                        The opponent selects up to two returning corps. If more
+                        than two are due, choose two; the others are eliminated.
+                        Leave a corps off-map when it has no legal placement.
+                      </p>
+                      {due.map((f) => (
+                        <div className="form-grid" key={f.id}>
+                          <label>
+                            <input name={`return-${f.id}`} type="checkbox" />
+                            Return {f.name}
+                          </label>
+                          <label>
+                            Return hex
+                            <select name={`hex-${f.id}`}>
+                              {c.hexes
+                                .filter((h) => h.terrain !== 'water')
+                                .map((h) => (
+                                  <option key={h.id}>{h.id}</option>
+                                ))}
+                            </select>
+                          </label>
+                        </div>
+                      ))}
+                      <button>Confirm reviewed returns</button>
+                    </fieldset>
+                  </form>
+                ) : null;
+              })}
+            </details>
+            <details className="panel">
+              <summary>Movement charts and phase settings</summary>
+              <p>
+                Original adaptation: 120-minute segments, at most three per
+                corps. Advance infantry 30 minutes/hex off-road or 15 on roads;
+                fresh cavalry 20/10. Battle infantry 120; exhausted cavalry
+                30/15. Woods ×2, rough ×1.5 off-road; bridge +15, minor river
+                +30. Major unbridged rivers are impassable. Configure before
+                saving orders
+                {c.preparation
+                  ? ' and before detachment placement or withdrawal submissions'
+                  : ''}
+                .
+              </p>
+              <form
+                key={`${c.id}-${c.charts.weather}-${c.charts.preparationMinutes}-${c.charts.tacticalTurnMinutes}`}
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const form = new FormData(e.currentTarget);
+                  commit({
+                    kind: 'configure',
+                    charts: {
+                      ...c.charts,
+                      weather: form.get('weather') as typeof c.charts.weather,
+                      preparationMinutes: Number(form.get('preparation')),
+                      battleMinutes: Number(form.get('duration')),
+                      tacticalTurnMinutes: form.get('turn')
+                        ? Number(form.get('turn'))
+                        : null,
+                    },
+                  });
+                }}
+              >
+                <fieldset
+                  disabled={
+                    busy ||
+                    !!state.waterlooDraft ||
+                    c.phase !== 'planning' ||
+                    !preparationIsMutable(c) ||
+                    !!c.preparation?.deploymentHqIds.length ||
+                    c.submissions.some((s) => s.locked || s.orders.length)
+                  }
+                >
+                  <div className="form-grid">
+                    <label>
+                      Weather
+                      <select name="weather" defaultValue={c.charts.weather}>
+                        <option value="dry">Dry</option>
+                        <option value="rain">Rain</option>
+                        <option value="soft_ground">Soft ground</option>
+                      </select>
+                    </label>
+                    <label>
+                      Preparation minutes
+                      <input
+                        name="preparation"
+                        type="number"
+                        min={0}
+                        max={120}
+                        step={5}
+                        defaultValue={c.charts.preparationMinutes}
+                      />
+                    </label>
+                    <label>
+                      Expected battle minutes
+                      <input
+                        name="duration"
+                        type="number"
+                        min={30}
+                        max={720}
+                        step={5}
+                        defaultValue={c.charts.battleMinutes}
+                      />
+                    </label>
+                    <label>
+                      Minutes per tactical turn (optional)
+                      <input
+                        name="turn"
+                        type="number"
+                        min={1}
+                        max={120}
+                        defaultValue={c.charts.tacticalTurnMinutes ?? ''}
+                      />
+                    </label>
+                  </div>
+                  <button>Save phase charts</button>
+                </fieldset>
+              </form>
+            </details>
+            <details className="panel">
+              <summary>Resolution record</summary>
+              <ol>
+                {c.log.map((line, i) => (
+                  <li key={i}>{line}</li>
+                ))}
+              </ol>
+            </details>
+          </>
+        )}
+      </DeskDrawer>
+      <DeskDrawer title="Map options">
+        {' '}
+        <p>
+          {campaignTime(c, c.cursor)} · weather:{' '}
+          {c.charts.weather.replaceAll('_', ' ')} · phase closes{' '}
+          {campaignTime(c, phaseEnd(c.turn))}
+        </p>
         <div className="section-heading">
           <h2>{c.fontenoy?.title ?? 'Operational reference map'}</h2>
           <span>
@@ -313,6 +1042,19 @@ export function WaterlooDesk({ campaign: c }: { campaign: WaterlooCampaign }) {
           Road travel requires connected road edges. Opposing rosters and orders
           are withheld in side views.
         </p>
+        {c.fontenoy && view !== 'umpire' && (
+          <p>
+            Friendly counters show current positions. Dashed ? diamonds are
+            dated observations; open one to inspect it. Undiscovered and expired
+            enemy positions are withheld.
+          </p>
+        )}
+        {c.fontenoy && showBackdrop && (
+          <p className="fontenoy-map-art-note">
+            Decorative evocation of Flanders, 1745. Illustrated terrain and
+            lanes do not define movement; hex data and configured roads do.
+          </p>
+        )}{' '}
         <div className="form-grid">
           {c.fontenoy && (
             <label className="fontenoy-backdrop-toggle">
@@ -371,6 +1113,12 @@ export function WaterlooDesk({ campaign: c }: { campaign: WaterlooCampaign }) {
             Opposing private ratings are not exposed.
           </p>
         )}
+      </DeskDrawer>
+      <section
+        className="panel desk-map"
+        data-helper="map"
+        aria-label="Hex campaign map"
+      >
         <div className="map-scroll">
           <svg
             viewBox="0 0 940 465"
@@ -426,10 +1174,28 @@ export function WaterlooDesk({ campaign: c }: { campaign: WaterlooCampaign }) {
                   tabIndex={0}
                   aria-label={`Hex ${h.id}${h.name ? ' ' + h.name : ''}`}
                   onClick={() => {
+                    if (state.waterlooDraft?.kind === 'scout-request') {
+                      setDraft({
+                        ...state.waterlooDraft,
+                        input: { ...state.waterlooDraft.input, hexId: h.id },
+                      });
+                      return;
+                    }
                     if (draft && hexDistance(c, draft.path.at(-1)!, h.id) === 1)
                       setDraft({ ...draft, path: [...draft.path, h.id] });
                   }}
                   onKeyDown={(e) => {
+                    if (
+                      (e.key === 'Enter' || e.key === ' ') &&
+                      state.waterlooDraft?.kind === 'scout-request'
+                    ) {
+                      e.preventDefault();
+                      setDraft({
+                        ...state.waterlooDraft,
+                        input: { ...state.waterlooDraft.input, hexId: h.id },
+                      });
+                      return;
+                    }
                     if ((e.key === 'Enter' || e.key === ' ') && draft) {
                       e.preventDefault();
                       if (hexDistance(c, draft.path.at(-1)!, h.id) === 1)
@@ -509,7 +1275,12 @@ export function WaterlooDesk({ campaign: c }: { campaign: WaterlooCampaign }) {
                 );
               })}
             {c.corps
-              .filter((f) => f.hexId && f.status === 'ready')
+              .filter(
+                (f) =>
+                  f.hexId &&
+                  f.status === 'ready' &&
+                  (!c.fontenoy || visible(f)),
+              )
               .map((f) => {
                 const p = at(f.hexId!);
                 const stacked =
@@ -517,6 +1288,7 @@ export function WaterlooDesk({ campaign: c }: { campaign: WaterlooCampaign }) {
                   c.corps.some(
                     (other) =>
                       other.kind !== 'detachment' &&
+                      (!c.fontenoy || visible(other)) &&
                       other.hexId === f.hexId &&
                       other.status === 'ready',
                   );
@@ -536,7 +1308,24 @@ export function WaterlooDesk({ campaign: c }: { campaign: WaterlooCampaign }) {
                     }
                     aria-label={`Select ${visible(f) ? f.name : 'opposing corps'}`}
                     onClick={() => beginRoute(f)}
+                    onContextMenu={(e) => {
+                      if (!c.fontenoy || !visible(f)) return;
+                      e.preventDefault();
+                      setSelected(f.id);
+                      setFormationMenu(f.id);
+                    }}
                     onKeyDown={(e) => {
+                      if (
+                        c.fontenoy &&
+                        visible(f) &&
+                        (e.key === 'ContextMenu' ||
+                          (e.shiftKey && e.key === 'F10'))
+                      ) {
+                        e.preventDefault();
+                        setSelected(f.id);
+                        setFormationMenu(f.id);
+                        return;
+                      }
                       if (e.key === 'Enter' || e.key === ' ') {
                         e.preventDefault();
                         beginRoute(f);
@@ -566,526 +1355,45 @@ export function WaterlooDesk({ campaign: c }: { campaign: WaterlooCampaign }) {
                   </g>
                 );
               })}
-          </svg>
-        </div>
-        {c.fontenoy && showBackdrop && (
-          <p className="fontenoy-map-art-note">
-            Decorative evocation of Flanders, 1745. Illustrated terrain and
-            lanes do not define movement; hex data and configured roads do.
-          </p>
-        )}
-        {force && (
-          <div className="waterloo-inspection">
-            <h3>{visible(force) ? force.name : 'Opposing corps'}</h3>
-            <p>
-              {visible(force)
-                ? `${force.army.replaceAll('_', ' ')} · ${force.kind === 'detachment' ? 'stationary' : force.formation} · ${force.status} · ${force.hexId ?? 'off map'}`
-                : 'Composition and readiness withheld.'}
-            </p>
-            {visible(force) && <p>{force.roster}</p>}
-            {visible(force) && c.fontenoy && (
-              <>
-                <p>
-                  Commanders:{' '}
-                  {c.fontenoy.commanders
-                    .filter((commander) =>
-                      c
-                        .fontenoy!.formations.find(
-                          (link) => link.corpsId === force.id,
-                        )
-                        ?.commanderIds.includes(commander.id),
-                    )
-                    .map((commander) => commander.displayName)
-                    .join(', ') || 'None assigned'}
-                </p>
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Maurice unit</th>
-                      <th>Type</th>
-                      <th>Quality</th>
-                      <th>Contingent</th>
-                      <th>Readiness</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {c.fontenoy.units
-                      .filter((unit) =>
-                        c
-                          .fontenoy!.formations.find(
-                            (link) => link.corpsId === force.id,
-                          )
-                          ?.unitIds.includes(unit.id),
-                      )
-                      .map((unit) => (
-                        <tr key={unit.id}>
-                          <td>{unit.displayName}</td>
-                          <td>{unit.type.replaceAll('_', ' ')}</td>
-                          <td>{unit.quality ?? '—'}</td>
-                          <td>{unit.contingent.replaceAll('_', ' ')}</td>
-                          <td>{unit.currentStatus}</td>
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
-              </>
-            )}
-            {visible(force) &&
-              c.preparation?.withdrawnCorpsIds.includes(force.id) && (
-                <p>Withdrawn this phase; holds until the next phase.</p>
-              )}
-            {visible(force) && force.detachment && (
-              <p>
-                Stationary screen of{' '}
-                {
-                  c.corps.find((f) => f.id === force.detachment!.parentCorpsId)
-                    ?.name
-                }
-                . Use preparation to recall or deploy it; allocate its tactical
-                troops from the parent roster.
-              </p>
-            )}
-          </div>
-        )}
-        {draft && (
-          <div
-            className="campaign-editor"
-            data-helper="route"
-            aria-label="Hex route draft"
-          >
-            <h3>
-              Route for {c.corps.find((f) => f.id === draft.corpsId)!.name}
-            </h3>
-            <p>{draft.path.join(' → ')}</p>
-            <div className="form-grid">
-              <label>
-                Travel mode
-                <select
-                  value={draft.roadOnly ? 'road' : 'mixed'}
-                  onChange={(e) =>
-                    setDraft({ ...draft, roadOnly: e.target.value === 'road' })
-                  }
-                >
-                  <option value="road">Connected roads only</option>
-                  <option value="mixed">Off-road / mixed</option>
-                </select>
-              </label>
-              <label>
-                Departure (minutes after phase opening)
-                <input
-                  type="number"
-                  min={0}
-                  max={355}
-                  step={5}
-                  value={draft.startAt - phaseStart(c.turn)}
-                  onChange={(e) =>
-                    setDraft({
-                      ...draft,
-                      startAt: phaseStart(c.turn) + Number(e.target.value),
-                    })
-                  }
-                />
-              </label>
-              <label>
-                Command HQ
-                <select
-                  value={draft.hqId}
-                  onChange={(e) => setDraft({ ...draft, hqId: e.target.value })}
-                >
-                  {c.hqs
-                    .filter(
-                      (h) =>
-                        h.army ===
-                        c.corps.find((f) => f.id === draft.corpsId)!.army,
-                    )
-                    .map((h) => (
-                      <option key={h.id} value={h.id}>
-                        {h.name} · {h.mode}
-                      </option>
-                    ))}
-                </select>
-              </label>
-            </div>
-            <div className="button-row">
-              <button
-                disabled={busy || draft.path.length < 2}
-                onClick={saveSegment}
-              >
-                Save movement segment
-              </button>
-              <button
-                className="secondary"
-                disabled={busy || draft.path.length < 2}
-                onClick={() =>
-                  setDraft({ ...draft, path: draft.path.slice(0, -1) })
-                }
-              >
-                Undo route step
-              </button>
-              <button
-                className="secondary"
-                disabled={busy}
-                onClick={() => setDraft(null)}
-              >
-                Cancel route
-              </button>
-            </div>
-          </div>
-        )}
-        <h3 data-helper="orders" tabIndex={-1}>
-          {side === 'french' ? 'French' : alliedLabel} saved orders
-        </h3>
-        {!submission.orders.length && (
-          <p>No movement orders. Unordered corps hold.</p>
-        )}
-        <ul>
-          {submission.orders.map((o) => (
-            <li key={o.corpsId}>
-              <strong>{c.corps.find((f) => f.id === o.corpsId)!.name}</strong>:{' '}
-              {o.segments
-                .map(
-                  (s) =>
-                    `${s.path.join(' → ')} (${s.roadOnly ? 'road' : 'off-road'}, ${campaignTime(c, s.startAt).slice(-5)})`,
-                )
-                .join('; ')}{' '}
-              <form
-                key={`${o.corpsId}-${o.priority}`}
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  const priority = Number(
-                    new FormData(e.currentTarget).get('priority'),
-                  );
-                  commit({
-                    kind: 'orders',
-                    side,
-                    orders: submission.orders.map((p) =>
-                      p.corpsId === o.corpsId ? { ...p, priority } : p,
-                    ),
-                    lock: false,
-                  });
-                }}
-              >
-                <label>
-                  Friendly route priority (lower first)
-                  <input
-                    name="priority"
-                    type="number"
-                    min={0}
-                    max={1000}
-                    required
-                    defaultValue={o.priority}
-                    disabled={!editing || !!state.waterlooDraft}
-                  />
-                </label>
-                <button
-                  className="secondary"
-                  disabled={!editing || !!state.waterlooDraft}
-                >
-                  Save priority
-                </button>
-              </form>
-              <button
-                className="secondary"
-                disabled={!editing || !!state.waterlooDraft}
-                onClick={() =>
-                  commit({
-                    kind: 'orders',
-                    side,
-                    orders: submission.orders.filter(
-                      (p) => p.corpsId !== o.corpsId,
-                    ),
-                    lock: false,
-                  })
-                }
-              >
-                Remove order
-              </button>
-            </li>
-          ))}
-        </ul>
-      </section>
-      {view === 'umpire' ? (
-        <>
-          <details className="panel">
-            <summary>Headquarters and due returns</summary>
-            <p>
-              HQ markers express command intent. Place them before saving
-              orders, within three hexes of their army and outside enemy
-              control/influence. Normal mode has greater range; Battle mode
-              supplies briefing context.
-            </p>
-            {c.hqs.map((h) => (
-              <form
-                key={`${h.id}-${h.hexId}-${h.mode}`}
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  const form = new FormData(e.currentTarget);
-                  commit({
-                    kind: 'place-hqs',
-                    placements: [
-                      {
-                        hqId: h.id,
-                        hexId: String(form.get('hex')),
-                        mode: form.get('mode') as 'normal' | 'battle',
-                      },
-                    ],
-                  });
-                }}
-              >
-                <fieldset
-                  disabled={
-                    busy ||
-                    !!state.waterlooDraft ||
-                    c.phase !== 'planning' ||
-                    !preparationIsMutable(c) ||
-                    !!c.preparation?.deploymentHqIds.length ||
-                    c.submissions.some((s) => s.locked || s.orders.length)
-                  }
-                >
-                  <legend>{h.name}</legend>
-                  <div className="form-grid">
-                    <label>
-                      HQ hex
-                      <select name="hex" defaultValue={h.hexId}>
-                        {c.hexes
-                          .filter((h) => h.terrain !== 'water')
-                          .map((h) => (
-                            <option key={h.id}>{h.id}</option>
-                          ))}
-                      </select>
-                    </label>
-                    <label>
-                      HQ mode
-                      <select name="mode" defaultValue={h.mode}>
-                        <option value="normal">Normal</option>
-                        <option value="battle">Battle</option>
-                      </select>
-                    </label>
-                  </div>
-                  <button>Place {h.name}</button>
-                </fieldset>
-              </form>
-            ))}
-            {(['french', 'allied'] as const).map((side) => {
-              const due = c.corps.filter(
-                (f) =>
-                  f.side === side &&
-                  f.status === 'blown' &&
-                  f.returnSlot !== null &&
-                  f.returnSlot <= c.turn,
-              );
-              return due.length ? (
-                <form
-                  key={side}
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    const form = new FormData(e.currentTarget);
-                    const selected = due.filter(
-                      (f) => form.get(`return-${f.id}`) === 'on',
-                    );
-                    commit({
-                      kind: 'return-corps',
-                      corpsIds: selected.map((f) => f.id),
-                      hexIds: selected.map((f) =>
-                        String(form.get(`hex-${f.id}`)),
-                      ),
-                    });
+            {reportMarkers.map((r) => {
+              const observation = r.observation!;
+              if (observation.level === 'none') return null;
+              const p = at(observation.hexId);
+              return (
+                <g
+                  key={r.requestId}
+                  role="button"
+                  tabIndex={0}
+                  className={`hex-intelligence${r.observedTurn! < c.turn ? ' aged-report' : ''}`}
+                  aria-label={`Intelligence report at ${observation.hexId} · observed phase ${r.observedTurn}`}
+                  onClick={() => {
+                    if (!selectScoutArea(observation.hexId))
+                      setReportSelection(r.requestId);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      if (!selectScoutArea(observation.hexId))
+                        setReportSelection(r.requestId);
+                    }
                   }}
                 >
-                  <fieldset
-                    disabled={
-                      busy ||
-                      !!state.waterlooDraft ||
-                      c.phase !== 'planning' ||
-                      !preparationIsMutable(c) ||
-                      !!c.preparation?.deploymentHqIds.length ||
-                      c.submissions.some((s) => s.locked || s.orders.length)
-                    }
-                  >
-                    <legend>{side} due returns</legend>
-                    <p>
-                      The opponent selects up to two returning corps. If more
-                      than two are due, choose two; the others are eliminated.
-                      Leave a corps off-map when it has no legal placement.
-                    </p>
-                    {due.map((f) => (
-                      <div className="form-grid" key={f.id}>
-                        <label>
-                          <input name={`return-${f.id}`} type="checkbox" />
-                          Return {f.name}
-                        </label>
-                        <label>
-                          Return hex
-                          <select name={`hex-${f.id}`}>
-                            {c.hexes
-                              .filter((h) => h.terrain !== 'water')
-                              .map((h) => (
-                                <option key={h.id}>{h.id}</option>
-                              ))}
-                          </select>
-                        </label>
-                      </div>
-                    ))}
-                    <button>Confirm reviewed returns</button>
-                  </fieldset>
-                </form>
-              ) : null;
+                  <path
+                    d={`M ${p.x} ${p.y - 18} l 18 18 l -18 18 l -18 -18 Z`}
+                  />
+                  <title>
+                    Last observed phase {r.observedTurn}; valid through phase{' '}
+                    {observation.expiresAfterTurn}. Snapshot only.
+                  </title>
+                  <text x={p.x} y={p.y + 5} textAnchor="middle">
+                    ?
+                  </text>
+                </g>
+              );
             })}
-          </details>
-          <section
-            className="panel"
-            data-helper="battles"
-            aria-label="Pending encounters"
-          >
-            <h2>Contacts and battles</h2>
-            {!c.encounters.some((e) => !e.settled) && (
-              <p>No outstanding contacts.</p>
-            )}
-            {c.encounters
-              .filter((e) => !e.settled && !e.battleId)
-              .map((e) => (
-                <article key={e.id}>
-                  <h3>
-                    Contact at {e.hexId} · {campaignTime(c, e.at)}
-                  </h3>
-                  <p>
-                    {e.corpsIds
-                      .map((id) => c.corps.find((f) => f.id === id)!.name)
-                      .join(' / ')}
-                  </p>
-                  <p>{e.reason}</p>
-                  <div className="button-row">
-                    <button
-                      disabled={busy || !!state.waterlooDraft}
-                      onClick={() =>
-                        commit({
-                          kind: 'declare-battle',
-                          encounterId: e.id,
-                          title: `Battle at ${e.hexId}`,
-                        })
-                      }
-                    >
-                      Declare tactical battle
-                    </button>
-                    <button
-                      disabled={busy || !!state.waterlooDraft}
-                      className="secondary"
-                      onClick={() =>
-                        commit({ kind: 'stand-off', encounterId: e.id })
-                      }
-                    >
-                      Record stand-off
-                    </button>
-                  </div>
-                </article>
-              ))}
-            {c.battles.map((b) => (
-              <BattleCard key={b.id} campaign={c} battle={b} />
-            ))}
-          </section>
-          <details className="panel">
-            <summary>Movement charts and phase settings</summary>
-            <p>
-              Original adaptation: 120-minute segments, at most three per corps.
-              Advance infantry 30 minutes/hex off-road or 15 on roads; fresh
-              cavalry 20/10. Battle infantry 120; exhausted cavalry 30/15. Woods
-              ×2, rough ×1.5 off-road; bridge +15, minor river +30. Major
-              unbridged rivers are impassable. Configure before saving orders
-              {c.preparation
-                ? ' and before detachment placement or withdrawal submissions'
-                : ''}
-              .
-            </p>
-            <form
-              key={`${c.id}-${c.charts.weather}-${c.charts.preparationMinutes}-${c.charts.tacticalTurnMinutes}`}
-              onSubmit={(e) => {
-                e.preventDefault();
-                const form = new FormData(e.currentTarget);
-                commit({
-                  kind: 'configure',
-                  charts: {
-                    ...c.charts,
-                    weather: form.get('weather') as typeof c.charts.weather,
-                    preparationMinutes: Number(form.get('preparation')),
-                    battleMinutes: Number(form.get('duration')),
-                    tacticalTurnMinutes: form.get('turn')
-                      ? Number(form.get('turn'))
-                      : null,
-                  },
-                });
-              }}
-            >
-              <fieldset
-                disabled={
-                  busy ||
-                  !!state.waterlooDraft ||
-                  c.phase !== 'planning' ||
-                  !preparationIsMutable(c) ||
-                  !!c.preparation?.deploymentHqIds.length ||
-                  c.submissions.some((s) => s.locked || s.orders.length)
-                }
-              >
-                <div className="form-grid">
-                  <label>
-                    Weather
-                    <select name="weather" defaultValue={c.charts.weather}>
-                      <option value="dry">Dry</option>
-                      <option value="rain">Rain</option>
-                      <option value="soft_ground">Soft ground</option>
-                    </select>
-                  </label>
-                  <label>
-                    Preparation minutes
-                    <input
-                      name="preparation"
-                      type="number"
-                      min={0}
-                      max={120}
-                      step={5}
-                      defaultValue={c.charts.preparationMinutes}
-                    />
-                  </label>
-                  <label>
-                    Expected battle minutes
-                    <input
-                      name="duration"
-                      type="number"
-                      min={30}
-                      max={720}
-                      step={5}
-                      defaultValue={c.charts.battleMinutes}
-                    />
-                  </label>
-                  <label>
-                    Minutes per tactical turn (optional)
-                    <input
-                      name="turn"
-                      type="number"
-                      min={1}
-                      max={120}
-                      defaultValue={c.charts.tacticalTurnMinutes ?? ''}
-                    />
-                  </label>
-                </div>
-                <button>Save phase charts</button>
-              </fieldset>
-            </form>
-          </details>
-          <details className="panel">
-            <summary>Resolution record</summary>
-            <ol>
-              {c.log.map((line, i) => (
-                <li key={i}>{line}</li>
-              ))}
-            </ol>
-          </details>
-        </>
-      ) : (
-        <p className="panel">
-          Switch to umpire view to adjudicate contacts, share battle briefs or
-          record tactical results.
-        </p>
-      )}
+          </svg>
+        </div>
+      </section>
     </div>
   );
 }

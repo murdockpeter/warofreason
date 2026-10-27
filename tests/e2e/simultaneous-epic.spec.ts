@@ -13,6 +13,7 @@ import {
   navigateTo,
   removeTestProfile,
   testProfile,
+  showHelperChoice,
 } from './profile';
 async function current(page: Page) {
   const result = await page.evaluate(() => window.desktop.getCampaignLibrary());
@@ -115,12 +116,7 @@ for (const packaged of [false, true])
       let page = await app.firstWindow();
       await page.context().setOffline(true);
       const panel = () => page.locator('[data-helper="epic"]');
-      await page
-        .getByRole('button', {
-          name: 'Show me: Review optional Epic Points',
-          exact: true,
-        })
-        .click();
+      await showHelperChoice(page, 'Show me: Review optional Epic Points');
       await expect(panel()).toHaveAttribute('open');
       await confirm(0);
       await page
@@ -143,12 +139,7 @@ for (const packaged of [false, true])
         .getByLabel('Entry explanation', { exact: true })
         .fill('Reviewed from our own scoring materials.');
       await navigateTo(page, 'Settings');
-      await page
-        .getByRole('button', {
-          name: 'Show me: Return to your edit',
-          exact: true,
-        })
-        .click();
+      await showHelperChoice(page, 'Show me: Return to your edit');
       await expect(
         page.getByLabel('Allied Epic Points', { exact: true }),
       ).toHaveValue('');

@@ -8,6 +8,7 @@ import {
   navigateTo,
   removeTestProfile,
   testProfile,
+  openDeskDrawer,
 } from './profile';
 
 async function snapshot(page: Page) {
@@ -50,6 +51,7 @@ for (const packaged of [false, true])
       await page.context().setOffline(true);
       const panel = () =>
         page.getByRole('region', { name: 'Tournai siege and victory' });
+      await openDeskDrawer(page, 'Campaign tools');
       await panel()
         .getByText('Siege rules and checkpoint history', { exact: true })
         .click();
@@ -157,6 +159,7 @@ for (const packaged of [false, true])
       await page
         .getByRole('button', { name: 'Finish shared phase', exact: true })
         .click();
+      await openDeskDrawer(page, 'Campaign tools');
       await expect(
         panel().getByRole('heading', {
           name: 'Campaign outcome: french',
@@ -171,7 +174,7 @@ for (const packaged of [false, true])
           name: 'Resolve simultaneous movement',
           exact: true,
         }),
-      ).toBeDisabled();
+      ).not.toBeVisible();
       const concluded = await snapshot(page);
       expect(concluded.fontenoy!.siege).toMatchObject({
         progress: 1,
@@ -211,6 +214,7 @@ for (const packaged of [false, true])
       app = await launchDesktop(destination, packaged);
       page = await app.firstWindow();
       expect((await snapshot(page)).fontenoy).toEqual(concluded.fontenoy);
+      await openDeskDrawer(page, 'Campaign tools');
       await expect(
         panel().getByRole('heading', {
           name: 'Campaign outcome: french',

@@ -1,3 +1,4 @@
+import { DeskDrawer } from './DeskDrawer';
 import { useCallback, useRef, useState } from 'react';
 import type { FontenoyCampaign } from '../domain/campaign';
 import {
@@ -199,8 +200,13 @@ export function OperationalMap({
           {state.error}
         </p>
       )}
-      <details className="map-options" open={ordersOnly ? true : undefined}>
-        <summary>Map options & campaign setup</summary>
+      <DeskDrawer
+        title="Map options & campaign setup"
+        className="map-options"
+        openWhen={ordersOnly}
+        inline={ordersOnly}
+      >
+        {' '}
         <section
           className="panel operational-toolbar"
           aria-label="Operational controls"
@@ -227,6 +233,12 @@ export function OperationalMap({
                   setSelectedId(null);
                   setPath([]);
                   setExportMessage('');
+                  const drawer =
+                    e.currentTarget.closest<HTMLDetailsElement>('.desk-drawer');
+                  if (drawer) {
+                    drawer.open = false;
+                    drawer.querySelector('summary')?.focus();
+                  }
                 }}
               >
                 <option value="umpire">Umpire · all forces</option>
@@ -310,7 +322,14 @@ export function OperationalMap({
             </p>
           )}
         </section>
-      </details>
+        {op && view === 'umpire' && (
+          <MovementConfiguration
+            key={`${campaign.id}:${campaign.revision}`}
+            rules={op.rules}
+            campaign={campaign}
+          />
+        )}
+      </DeskDrawer>
       {!ordersOnly && selected && (
         <div className="map-routebar" aria-label="Selected formation actions">
           <strong>{selected.displayName}</strong>
@@ -396,8 +415,11 @@ export function OperationalMap({
         </button>
       )}
       {!ordersOnly && (selected || square) && (
-        <details className="formation-inspection">
-          <summary>Formation & square details</summary>
+        <DeskDrawer
+          title="Formation & square details"
+          className="formation-inspection"
+        >
+          {' '}
           <section
             className="panel operational-inspector"
             aria-label="Map inspector"
@@ -481,18 +503,16 @@ export function OperationalMap({
                 </>
               ))}
           </section>
-        </details>
+        </DeskDrawer>
       )}
-      <details
+      <DeskDrawer
+        title="Orders"
         className="map-orders"
-        open={ordersOnly || op?.phase === 'resolution' ? true : undefined}
+        edge="bottom"
+        openWhen={ordersOnly || op?.phase === 'resolution'}
+        inline={ordersOnly}
       >
-        <summary>
-          Orders
-          {safeOrders.length
-            ? ` · ${safeOrders.length} planned`
-            : ' · holding position'}
-        </summary>
+        {' '}
         <section
           className="panel operational-orders"
           data-helper="legacy-orders"
@@ -609,7 +629,7 @@ export function OperationalMap({
             </p>
           )}
         </section>
-      </details>
+      </DeskDrawer>
       {!!visible.engagements.length && (
         <section
           className="panel operational-orders"
@@ -631,13 +651,7 @@ export function OperationalMap({
           </ul>
         </section>
       )}
-      {op && view === 'umpire' && (
-        <MovementConfiguration
-          key={`${campaign.id}:${campaign.revision}`}
-          rules={op.rules}
-          campaign={campaign}
-        />
-      )}
+
       {menu && menuColumn && (
         <FormationMenu
           x={menu.x}

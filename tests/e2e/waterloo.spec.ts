@@ -7,6 +7,7 @@ import {
   navigateTo,
   removeTestProfile,
   testProfile,
+  openDeskDrawer,
 } from './profile';
 
 for (const packaged of [false, true])
@@ -138,6 +139,7 @@ for (const packaged of [false, true])
           exact: true,
         })
         .click();
+      await openDeskDrawer(page, 'Turn desk');
       await page
         .getByRole('button', { name: 'Declare tactical battle', exact: true })
         .click();
@@ -292,6 +294,7 @@ for (const packaged of [false, true])
       await app.close();
       app = await launchDesktop(profile, packaged);
       page = await app.firstWindow();
+      await openDeskDrawer(page, 'Turn desk');
       await expect(
         page.getByRole('article', { name: 'Battle at 6,4', exact: true }),
       ).toContainText('campaign effects applied, result revision 2');

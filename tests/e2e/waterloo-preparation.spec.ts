@@ -7,6 +7,7 @@ import {
   navigateTo,
   removeTestProfile,
   testProfile,
+  openDeskDrawer,
 } from './profile';
 
 async function automateDialogs(app: ElectronApplication, response = 1) {
@@ -69,12 +70,13 @@ for (const packaged of [false, true])
           throw new Error('Expected hex campaign');
         return response.value.active;
       };
+      await openDeskDrawer(page, 'Turn desk');
       await page
         .getByRole('button', { name: 'Enable preparation rules', exact: true })
         .click();
       await expect(
         page.getByRole('button', { name: 'Lock French orders', exact: true }),
-      ).toBeDisabled();
+      ).not.toBeVisible();
       await page.getByText('Screening detachments', { exact: true }).click();
       const deploy = () =>
         page.getByRole('group', {
@@ -96,6 +98,7 @@ for (const packaged of [false, true])
           exact: true,
         }),
       ).toBeVisible();
+      await openDeskDrawer(page, 'Map options');
       await page
         .getByRole('combobox', { name: 'Map overlay', exact: true })
         .selectOption('control');
@@ -105,6 +108,7 @@ for (const packaged of [false, true])
         .screenshot({
           path: `test-results/${packaged ? 'packaged' : 'built'}-preparation-map.png`,
         });
+      await openDeskDrawer(page, 'Turn desk');
       await page
         .getByRole('button', {
           name: 'Recall French I Corps screen',
@@ -147,6 +151,7 @@ for (const packaged of [false, true])
           exact: true,
         })
         .click();
+      await openDeskDrawer(page, 'Turn desk');
       await expect(page.getByLabel('Withdrawal readiness')).toHaveText(
         'French: locked · Coalition: locked',
       );
@@ -155,6 +160,7 @@ for (const packaged of [false, true])
       await automateDialogs(app, 0);
       page = await app.firstWindow();
       page.setDefaultTimeout(15000);
+      await openDeskDrawer(page, 'Turn desk');
       await expect(page.getByLabel('Withdrawal readiness')).toHaveText(
         'French: locked · Coalition: locked',
       );
@@ -202,6 +208,7 @@ for (const packaged of [false, true])
         })
         .click();
       await page.getByRole('button', { name: 'Hex 2,6', exact: true }).click();
+      await page.locator('.route-options > summary').click();
       await page
         .getByRole('combobox', { name: 'Travel mode', exact: true })
         .selectOption('mixed');
@@ -266,6 +273,7 @@ for (const packaged of [false, true])
       await page
         .getByRole('combobox', { name: 'Map view', exact: true })
         .selectOption('french');
+      await openDeskDrawer(page, 'Map options');
       await page
         .getByRole('combobox', { name: 'Map overlay', exact: true })
         .selectOption('command');

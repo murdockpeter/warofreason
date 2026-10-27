@@ -1,4 +1,4 @@
-import { selectMapView } from './profile';
+import { selectMapView, openDeskDrawer, closeDeskDrawer } from './profile';
 import { expect, test } from '@playwright/test';
 import type { ElectronApplication, Page } from '@playwright/test';
 import path from 'node:path';
@@ -100,6 +100,7 @@ for (const packaged of [false, true]) {
         .getByRole('button', { name: 'Enable operational play' })
         .click();
       await expect(page.getByText('french · planning · turn 1')).toBeVisible();
+      await openDeskDrawer(page, 'Map options & campaign setup');
       await page
         .getByText('Movement house rules and roadblocks', { exact: true })
         .click();
@@ -107,6 +108,7 @@ for (const packaged of [false, true]) {
         .getByRole('listbox', { name: 'Blocked squares' })
         .selectOption([squares[2]!]);
       await page.getByRole('button', { name: 'Save movement rules' }).click();
+      await closeDeskDrawer(page, 'Map options & campaign setup');
       await page
         .getByRole('button', {
           name: `Select ${seeded.columns[0]!.displayName}`,
@@ -135,6 +137,7 @@ for (const packaged of [false, true]) {
       await expect(
         page.getByText('No orders visible in this view.'),
       ).toBeVisible();
+      await closeDeskDrawer(page, 'Orders');
       await page.getByRole('button', { name: 'Add order' }).click();
       await page.getByRole('button', { name: 'Zoom in' }).click();
       await page.getByRole('button', { name: 'Zoom in' }).click();
@@ -285,6 +288,7 @@ for (const packaged of [false, true]) {
           filePath: filename,
         });
       }, target);
+      await openDeskDrawer(page, 'Map options & campaign setup');
       await page.getByRole('button', { name: 'Export faction view' }).click();
       await expect(
         page.getByText('Saved faction view. This is not a campaign backup.'),

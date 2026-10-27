@@ -18,6 +18,8 @@ export default defineConfig({
     'simultaneous-siege.spec.ts',
     'simultaneous-commanders.spec.ts',
     'simultaneous-epic.spec.ts',
+    'simultaneous-intelligence.spec.ts',
+    'desk-drawers.spec.ts',
   ],
   workers: 1,
   timeout: 45000,

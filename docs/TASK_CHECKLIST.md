@@ -1,5 +1,20 @@
 # Running implementation checklist
 
+## Map-first drawers and compact turn interface - 2026-10-26
+
+- [x] Audit simultaneous/legacy map, current controls, draft guards and Helper navigation.
+- [x] Move secondary work into accessible side/bottom drawers; keep map, turn state and essential actions visible. Add viewport-fitting map layout, compact guidance, collapsed route options and drawer navigation in the manual.
+- [x] Preserve map interaction, faction filtering, native confirmations, drafts, keyboard dismissal and Helper reveal/focus. New built/packaged drawer walkthroughs exercise retained route/scouting drafts, responsive bounds, inspection and Helper reveal; final regression run follows positioning/auto-close refinements.
+- [x] Complete 0.14.0 acceptance: all 268 unit/integration tests and all 37 built/packaged desktop checks pass, including viewport fit, keyboard tab order, drawer dismissal/focus, retained drafts, Helper reveal, responsive bounds, legacy/simultaneous workflows and private reports. Offline development startup, TypeScript, lint, formatting, production build and Windows unpacked packaging pass. Packaged layout visually inspected; preview retained under ignored release/ui-review/compact-desk.png. No player saves or campaign rules changed by this UI increment; no commit/push/publish performed.
+
+## Simultaneous scouting and dated intelligence - 2026-10-26
+
+- [x] Review original plan, legacy scouting and simultaneous privacy/phase/replay boundaries.
+- [x] Implement manual hex-based requests and versioned umpire releases; keep dice/card interpretation external.
+- [x] Add map-menu access, dated snapshot markers, expiry/redaction, compact report controls and Helper/Help guidance.
+- [x] Verify phase/draft guards, correction history, faction privacy, movement independence, rollback/restart/import/replay and clean clones. All 268 unit/integration tests pass; targeted built/packaged walkthroughs pass for native cancellation, navigation, real enemy movement without report tracking, correction, expiry, restart and portable import.
+- [x] Complete acceptance for 0.13.0: all 268 unit/integration tests, all 35 built/packaged desktop checks, offline development startup, TypeScript, lint, whole-project formatting, production build and Windows unpacked packaging pass. Built/packaged faction map screenshots visually inspected. Allied scouting drafts also retain their planning side across navigation. No player saves/private materials changed and no commit/push/publish performed. Remaining work is recorded in the operational TODO; no further increment started.
+
 ## CI cold-cache lockfile repair - 2026-10-26
 
 - [x] Read run 40376873001 and reproduce missing type-check 0.6.0; identify that previous clean-folder install still reused the global npm cache.

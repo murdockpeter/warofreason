@@ -35,3 +35,7 @@ Milestone D implements only `house_rule_v0.1/operations-1`: configurable 3-point
 ## Manual Epic Points records (0.12.0)
 
 `maurice_manual_epic_v0.1` is a recordkeeping contract, not an approximation of published Maurice scoring. Players use their own materials to enter non-negative per-event values or leave them unrecorded; the application only sums current versions. Application bounds, duplicate-entry checks, clear-planning/checkpoint timing and correction guards are implementation conventions. No point award, card effect, tactical result, campaign exhaustion or victory threshold is inferred. Faction summaries withhold opposing values and umpire rationale.
+
+## Simultaneous scouting and intelligence (0.13.0)
+
+`manual_reconnaissance_v0.1` is a provisional campaign recordkeeping policy. Request timing, one outstanding request per formation, manual disclosure levels and expiry are app workflow decisions awaiting playtesting. They are not published Maurice reconnaissance rules. No scouting range, troop-type success bonus, automatic die threshold or private card effect is implemented. Use personal game materials and record the agreed outcome and rationale manually. Released labels/details are user-entered campaign data; no published card text or new copyrighted artwork is bundled.

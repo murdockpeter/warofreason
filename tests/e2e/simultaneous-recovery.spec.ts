@@ -8,6 +8,8 @@ import {
   navigateTo,
   removeTestProfile,
   testProfile,
+  openDeskDrawer,
+  closeDeskDrawer,
 } from './profile';
 
 async function snapshot(page: Page) {
@@ -65,6 +67,7 @@ for (const packaged of [false, true])
       app = await launchDesktop(profile, packaged);
       let page = await app.firstWindow();
       await page.context().setOffline(true);
+      await openDeskDrawer(page, 'Campaign tools');
       await page
         .getByText('Maurice unit recovery · not enabled', { exact: true })
         .click();
@@ -101,6 +104,7 @@ for (const packaged of [false, true])
       await expect(
         page.getByRole('form', { name: 'Maurice recovery policy' }),
       ).not.toBeVisible();
+      await closeDeskDrawer(page, 'Campaign tools');
       const c = (await snapshot(page)).active;
       const unitName = c.fontenoy!.units[0]!.displayName;
       for (const [side, index] of [
@@ -135,6 +139,7 @@ for (const packaged of [false, true])
           exact: true,
         })
         .click();
+      await openDeskDrawer(page, 'Turn desk');
       await page
         .getByRole('button', { name: 'Declare tactical battle', exact: true })
         .click();
@@ -209,6 +214,7 @@ for (const packaged of [false, true])
         currentStatus: 'recovering',
       });
       expect(applied.active.fontenoy!.aftermath!.recoveries).toHaveLength(1);
+      await openDeskDrawer(page, 'Turn desk');
       await page
         .getByRole('region', { name: 'Maurice unit after-action record' })
         .screenshot({

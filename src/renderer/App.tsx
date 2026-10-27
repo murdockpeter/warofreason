@@ -1,3 +1,4 @@
+import { DeskDrawer } from './DeskDrawer';
 import { useEffect, useState } from 'react';
 import { screens, useSession } from './session';
 import type { Screen } from './session';
@@ -153,7 +154,7 @@ export function App() {
   const waterloo = current?.schemaVersion === 3 ? current : null;
   return (
     <div
-      className={`app-shell ${screen === 'Campaign Map' ? 'map-focused' : ''}`}
+      className={`app-shell ${screen === 'Campaign Map' ? 'map-focused' : ''} ${waterloo && screen !== 'Settings' && screen !== 'Dashboard' ? 'compact-desk' : ''}`}
     >
       <a className="skip-link" href="#main">
         Skip to content
@@ -202,7 +203,13 @@ export function App() {
           <button
             className="secondary"
             aria-current={screen === 'Campaign Map' ? 'page' : undefined}
-            onClick={() => navigate('Campaign Map')}
+            onClick={() => {
+              navigate('Campaign Map');
+              const menu = document.querySelector<HTMLDetailsElement>(
+                '.campaign-navigation',
+              );
+              if (menu) menu.open = false;
+            }}
           >
             Campaign Map
           </button>
@@ -324,6 +331,10 @@ export function App() {
             <span className="milestone">{content.milestone}</span>
           </div>
           <PlayerHelper
+            compact={
+              screen === 'Campaign Map' ||
+              (!!waterloo && screen !== 'Dashboard' && screen !== 'Settings')
+            }
             campaign={library?.active ?? null}
             view={view}
             onHelp={() => setHelpOpen(true)}
@@ -406,8 +417,7 @@ export function App() {
               </section>
             )}
           </div>
-          <details className="rules-help">
-            <summary>Rules & help</summary>
+          <DeskDrawer title="Rules & help" className="rules-help">
             <section className="rules-note" aria-label="Rules boundary">
               <span className="rule-mark" aria-hidden="true">
                 i
@@ -422,7 +432,7 @@ export function App() {
                 </p>
               </div>
             </section>
-          </details>
+          </DeskDrawer>
           <footer className="page-footer">
             Built for the tabletop{' '}
             <span>Milestone F · Aftermath, siege & victory</span>

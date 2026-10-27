@@ -1,10 +1,40 @@
-import { _electron as electron } from '@playwright/test';
+import { _electron as electron, expect } from '@playwright/test';
 import { mkdtempSync, rmSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import type { Page } from '@playwright/test';
 
+export async function openDeskDrawer(page: Page, title: string) {
+  const drawer = page.locator(`.desk-drawer[data-drawer="${title}"]`);
+  if ((await drawer.getAttribute('open')) === null)
+    await drawer.locator(':scope > summary').click();
+  await expect(drawer).toHaveAttribute('open');
+}
+export async function closeDeskDrawer(page: Page, title: string) {
+  const drawer = page.locator(`.desk-drawer[data-drawer="${title}"]`);
+  if (await drawer.evaluate((e) => e.hasAttribute('open')))
+    await drawer
+      .getByRole('button', { name: `Close ${title}`, exact: true })
+      .click();
+}
+export async function openPlayerHelper(page: Page) {
+  const helper = page.locator('.compact-helper');
+  if (
+    (await helper.count()) &&
+    !(await helper.evaluate((e) => e.hasAttribute('open')))
+  )
+    await helper.locator(':scope > summary').click();
+}
+export async function showHelperChoice(page: Page, name: string) {
+  await expect(page.locator('.player-helper')).toContainText(
+    name.replace('Show me: ', ''),
+  );
+  await openPlayerHelper(page);
+  await page.getByRole('button', { name, exact: true }).click();
+}
+
 export async function navigateTo(page: Page, name: string) {
+  await expect(page.locator('.topbar')).toBeVisible();
   const button = page.getByRole('button', { name, exact: true });
   if (!(await button.isVisible()))
     await page.locator('.campaign-navigation > summary').click();
@@ -13,7 +43,8 @@ export async function navigateTo(page: Page, name: string) {
 export async function selectMapView(page: Page, view: string) {
   const select = page.getByRole('combobox', { name: 'Map view' });
   if (!(await select.isVisible()))
-    await page.locator('.map-options > summary').click();
+    await openDeskDrawer(page, 'Map options & campaign setup');
+  await expect(select).toBeVisible();
   await select.selectOption(view);
 }
 

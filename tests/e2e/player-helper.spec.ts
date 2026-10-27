@@ -1,6 +1,12 @@
 import { expect, test } from '@playwright/test';
 import type { ElectronApplication, Page } from '@playwright/test';
-import { launchDesktop, removeTestProfile, testProfile } from './profile';
+import {
+  launchDesktop,
+  removeTestProfile,
+  testProfile,
+  showHelperChoice,
+  openPlayerHelper,
+} from './profile';
 async function current(page: Page) {
   const result = await page.evaluate(() => window.desktop.getCampaignLibrary());
   if (!result.ok || result.value.active?.schemaVersion !== 3)
@@ -25,17 +31,12 @@ for (const packaged of [false, true])
       let page = await app.firstWindow();
       await page.context().setOffline(true);
       const helper = () =>
-        page.getByRole('region', { name: 'Player helper', exact: true });
+        page.locator('.compact-helper, .player-helper').first();
       await expect(
         page.getByRole('checkbox', { name: 'Helper mode', exact: true }),
       ).toBeChecked();
       await expect(helper()).toContainText('Start here: choose your campaign');
-      await helper()
-        .getByRole('button', {
-          name: 'Show me: Choose a campaign',
-          exact: true,
-        })
-        .click();
+      await showHelperChoice(page, 'Show me: Choose a campaign');
       await expect(
         page.getByRole('region', { name: 'Campaign library' }),
       ).toHaveClass(/helper-next/);
@@ -47,9 +48,7 @@ for (const packaged of [false, true])
         .click();
       await expect(helper()).toContainText('Choose French orders');
       const opening = await current(page);
-      await helper()
-        .getByRole('button', { name: 'Show me: Plan a move', exact: true })
-        .click();
+      await showHelperChoice(page, 'Show me: Plan a move');
       await expect(page.locator('[data-helper="map"]')).toHaveClass(
         /helper-next/,
       );
@@ -68,12 +67,7 @@ for (const packaged of [false, true])
         .getByRole('button', { name: 'Cancel route', exact: true })
         .click();
       await expect(helper()).toContainText('Choose French orders');
-      await helper()
-        .getByRole('button', {
-          name: 'Show me: Hold positions and lock orders',
-          exact: true,
-        })
-        .click();
+      await showHelperChoice(page, 'Show me: Hold positions and lock orders');
       const frenchLock = page.getByRole('button', {
         name: 'Lock French orders',
         exact: true,
@@ -82,12 +76,7 @@ for (const packaged of [false, true])
       expect(await current(page)).toEqual(opening);
       await frenchLock.click();
       await expect(helper()).toContainText('French orders are locked');
-      await helper()
-        .getByRole('button', {
-          name: 'Show me: Plan for the other side',
-          exact: true,
-        })
-        .click();
+      await showHelperChoice(page, 'Show me: Plan for the other side');
       await expect(
         page.getByRole('combobox', { name: 'Planning side', exact: true }),
       ).toBeFocused();
@@ -102,12 +91,7 @@ for (const packaged of [false, true])
         'Both sides are ready: resolve movement',
       );
       const locked = await current(page);
-      await helper()
-        .getByRole('button', {
-          name: 'Show me: Find Resolve movement',
-          exact: true,
-        })
-        .click();
+      await showHelperChoice(page, 'Show me: Find Resolve movement');
       await expect(
         page.getByRole('button', {
           name: 'Resolve simultaneous movement',
@@ -153,6 +137,7 @@ for (const packaged of [false, true])
         .getByRole('combobox', { name: 'Map view', exact: true })
         .selectOption('french');
       await expect(helper()).toContainText('Waiting for umpire review');
+      await openPlayerHelper(page);
       await expect(
         helper().getByRole('button', {
           name: 'Show me: Find the view controls',

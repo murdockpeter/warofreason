@@ -5,6 +5,8 @@ import {
   navigateTo,
   removeTestProfile,
   testProfile,
+  openDeskDrawer,
+  closeDeskDrawer,
 } from './profile';
 for (const packaged of [false, true])
   test(`${packaged ? 'packaged' : 'built'} Maurice Fontenoy simultaneous creation and saved-setup copy`, async () => {
@@ -45,6 +47,7 @@ for (const packaged of [false, true])
           throw new Error('Expected Fontenoy operations');
         return { ...result.value, active: result.value.active };
       };
+      await openDeskDrawer(page, 'Campaign tools');
       await expect(
         page.getByRole('region', {
           name: 'Maurice Fontenoy campaign',
@@ -75,16 +78,19 @@ for (const packaged of [false, true])
           backdropUrl,
         ),
       ).toBe(true);
+      await openDeskDrawer(page, 'Map options');
       await page.getByLabel('Show period backdrop', { exact: true }).uncheck();
       await expect(backdrop).toHaveCount(0);
       await page.getByLabel('Show period backdrop', { exact: true }).check();
       await expect(backdrop).toHaveCount(1);
+      await closeDeskDrawer(page, 'Map options');
       let c = (await snapshot()).active;
       expect(c.moduleId).toBe('fontenoy-operational');
       expect(c.date).toBe('1745-05-01');
       expect(c.fontenoy!.units).toHaveLength(38);
       expect(c.hqs.map((h) => h.name)).not.toContain('Napoleon');
       expect(c.corps.map((f) => f.army)).not.toContain('prussian');
+      await openDeskDrawer(page, 'Turn desk');
       await page
         .getByRole('button', { name: 'Enable preparation rules', exact: true })
         .click();
@@ -106,9 +112,11 @@ for (const packaged of [false, true])
       await page
         .getByRole('combobox', { name: 'Planning side', exact: true })
         .selectOption('french');
+      await closeDeskDrawer(page, 'Turn desk');
       await page
         .getByRole('button', { name: 'Select French Column A', exact: true })
         .click();
+      await page.locator('.route-options > summary').click();
       await expect(
         page.getByRole('combobox', { name: 'Travel mode', exact: true }),
       ).toHaveValue('mixed');

@@ -1,4 +1,8 @@
 import type { EpicInput } from '../domain/simultaneous-epic-schema';
+import type {
+  IntelligenceInput,
+  ReconnaissanceInput,
+} from '../domain/simultaneous-intelligence-schema';
 import type { OfficerAction } from '../domain/simultaneous-commanders-schema';
 import type {
   SimultaneousSiegePolicy,
@@ -32,6 +36,14 @@ import type {
 import type { SimultaneousRecoveryPolicy } from '../domain/simultaneous-aftermath-schema';
 
 export type WaterlooDraft =
+  | { kind: 'scout-request'; input: ReconnaissanceInput }
+  | {
+      kind: 'intelligence-report';
+      requestId: string;
+      expectedVersion: number;
+      input: IntelligenceInput;
+      reason: string;
+    }
   | {
       kind: 'epic';
       entryId: string | null;

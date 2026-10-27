@@ -274,6 +274,7 @@ export function cloneFontenoyOperational(
     })),
   };
   delete fresh.fontenoy.epic;
+  delete fresh.fontenoy.intelligence;
   delete fresh.fontenoy.officers;
   delete fresh.fontenoy.aftermath;
   delete fresh.fontenoy.siege.campaign;
