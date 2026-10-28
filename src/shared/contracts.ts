@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { CampaignApi } from './campaign-contracts';
+import type { KsApi } from './ks-contracts';
 
 export const channels = {
   info: 'app:info',
@@ -22,7 +23,7 @@ export const diagnosticSchema = z
   .strict();
 export const confirmationSchema = z.boolean();
 export const logResultSchema = z.object({ recorded: z.boolean() }).strict();
-export interface DesktopApi extends CampaignApi {
+export interface DesktopApi extends CampaignApi, KsApi {
   getAppInfo(): Promise<z.infer<typeof appInfoSchema>>;
   confirmResetSession(): Promise<boolean>;
   logError(

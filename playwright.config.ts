@@ -24,6 +24,7 @@ export default defineConfig({
     'saved-movement-routes.spec.ts',
     'historical-profile.spec.ts',
     'regional-map.spec.ts',
+    'crimean-ks.spec.ts',
   ],
   workers: 1,
   timeout: 45000,

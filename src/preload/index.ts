@@ -1,5 +1,13 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import {
+  ksChannels,
+  ksCreateSchema,
+  ksRefSchema,
+  ksRevisionSchema,
+  ksActionSchema,
+  ksLibraryResultSchema,
+} from '../shared/ks-contracts';
+import {
   channels,
   appInfoSchema,
   confirmationSchema,
@@ -28,6 +36,29 @@ import {
 } from '../shared/campaign-contracts';
 
 const api = Object.freeze<DesktopApi>({
+  getKsLibrary: async () =>
+    ksLibraryResultSchema.parse(await ipcRenderer.invoke(ksChannels.library)),
+  createKsCampaign: async (input) =>
+    ksLibraryResultSchema.parse(
+      await ipcRenderer.invoke(ksChannels.create, ksCreateSchema.parse(input)),
+    ),
+  openKsCampaign: async (input) =>
+    ksLibraryResultSchema.parse(
+      await ipcRenderer.invoke(ksChannels.open, ksRefSchema.parse(input)),
+    ),
+  commitKsRuling: async (input) =>
+    ksLibraryResultSchema.parse(
+      await ipcRenderer.invoke(ksChannels.action, ksActionSchema.parse(input)),
+    ),
+  importKsCampaign: async () =>
+    ksLibraryResultSchema.parse(await ipcRenderer.invoke(ksChannels.import)),
+  exportKsCampaign: async (input) =>
+    fileResultSchema.parse(
+      await ipcRenderer.invoke(
+        ksChannels.export,
+        ksRevisionSchema.parse(input),
+      ),
+    ),
   createWaterlooCampaign: async (input) =>
     libraryResultSchema.parse(
       await ipcRenderer.invoke(

@@ -1,4 +1,6 @@
 import { DeskDrawer } from './DeskDrawer';
+import { ModulePicker } from './ModulePicker';
+import { CrimeanWorkspace } from './CrimeanWorkspace';
 import { useEffect, useState } from 'react';
 import { screens, useSession } from './session';
 import type { Screen } from './session';
@@ -72,6 +74,32 @@ const descriptions: Record<
 };
 
 export function App() {
+  const [module, setModule] = useState<'maurice' | 'crimean'>(() => {
+    try {
+      return localStorage.getItem('campaign-module') === 'crimean'
+        ? 'crimean'
+        : 'maurice';
+    } catch {
+      return 'maurice';
+    }
+  });
+  const changeModule = () => {
+    const next = module === 'maurice' ? 'crimean' : 'maurice';
+    try {
+      localStorage.setItem('campaign-module', next);
+    } catch {
+      /* Workspace selection remains available without local preferences. */
+    }
+    setModule(next);
+  };
+  return module === 'crimean' ? (
+    <CrimeanWorkspace onSwitchModule={changeModule} />
+  ) : (
+    <MauriceApp onSwitchModule={changeModule} />
+  );
+}
+
+function MauriceApp({ onSwitchModule }: { onSwitchModule(): void }) {
   const { enabled: helperEnabled, setEnabled: setHelperEnabled } =
     useHelperSession();
   const { view, setView } = useOperationalSession();
@@ -200,6 +228,18 @@ export function App() {
       </details>
       <div className="workspace">
         <header className="topbar">
+          <ModulePicker
+            module="maurice"
+            disabled={
+              campaignPending ||
+              !!draft ||
+              !!setupDraft ||
+              !!planningDraft ||
+              !!tabletopDraft ||
+              !!waterlooDraft
+            }
+            onChange={onSwitchModule}
+          />
           <button
             className="secondary"
             aria-current={screen === 'Campaign Map' ? 'page' : undefined}

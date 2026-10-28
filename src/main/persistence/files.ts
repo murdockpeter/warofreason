@@ -15,6 +15,9 @@ import { CampaignError } from './errors';
 
 export const maxCampaignFileBytes = 64 * 1024 * 1024;
 export function readCampaignFile(filename: string): CampaignExport {
+  return exportSchema.parse(readJsonFile(filename));
+}
+export function readJsonFile(filename: string): unknown {
   const descriptor = openSync(filename, 'r');
   let text: string;
   try {
@@ -55,7 +58,7 @@ export function readCampaignFile(filename: string): CampaignExport {
       'This file is not valid JSON. Choose an unchanged campaign export.',
     );
   }
-  return exportSchema.parse(data);
+  return data;
 }
 export function writeCampaignFile(filename: string, value: CampaignExport) {
   writeJsonFile(filename, exportSchema.parse(value));

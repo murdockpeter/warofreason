@@ -57,6 +57,15 @@ beforeEach(() => {
     setupHistory: [],
   });
   window.desktop = {
+    getKsLibrary: vi.fn().mockResolvedValue({
+      ok: true,
+      value: { campaigns: [], active: null, events: [] },
+    }),
+    createKsCampaign: vi.fn(),
+    openKsCampaign: vi.fn(),
+    commitKsRuling: vi.fn(),
+    importKsCampaign: vi.fn(),
+    exportKsCampaign: vi.fn(),
     createWaterlooCampaign: vi.fn(),
     commitWaterlooAction: vi.fn(),
     commitAftermathAction: vi

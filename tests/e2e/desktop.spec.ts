@@ -126,6 +126,12 @@ for (const packaged of [false, true]) {
         require: 'undefined',
         process: 'undefined',
         api: [
+          'getKsLibrary',
+          'createKsCampaign',
+          'openKsCampaign',
+          'commitKsRuling',
+          'importKsCampaign',
+          'exportKsCampaign',
           'confirmResetSession',
           'getAppInfo',
           'logError',
@@ -183,6 +189,18 @@ for (const packaged of [false, true]) {
         }
       });
       expect(invalidRejected).toBe(true);
+      const ksInvalidRejected = await page.evaluate(async () => {
+        try {
+          await window.desktop.openKsCampaign({
+            id: '00000000-0000-4000-8000-000000000000',
+            arbitraryPath: 'C:/',
+          } as Parameters<typeof window.desktop.openKsCampaign>[0]);
+          return false;
+        } catch {
+          return true;
+        }
+      });
+      expect(ksInvalidRejected).toBe(true);
       // Exercise real native confirmation without leaving an interactive dialog open.
       await app.evaluate(({ dialog }) => {
         dialog.showMessageBox = async () => ({

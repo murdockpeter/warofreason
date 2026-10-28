@@ -12,6 +12,8 @@ import { isTrustedDocument } from './security';
 import { SqliteCampaignRepository } from './persistence/repository';
 import type { CampaignRepository } from './persistence/repository';
 import { registerCampaignIpc } from './campaign-ipc';
+import { KsRepository } from './persistence/ks-repository';
+import { registerKsIpc } from './ks-ipc';
 
 // Also isolates automated test profiles from the player's real saves.
 app.setName('maurice-campaign-companion');
@@ -25,6 +27,7 @@ if (!ownsInstance) app.quit();
 
 let window: BrowserWindow | null = null;
 let repository: CampaignRepository | null = null;
+let ksRepository: KsRepository | null = null;
 const rendererFile = path.join(__dirname, '../renderer/index.html');
 const devOrigin =
   !app.isPackaged &&
@@ -156,6 +159,17 @@ void app.whenReady().then(() => {
     return;
   }
   registerCampaignIpc(repository, () => window, assertSender, log);
+  registerKsIpc(
+    () => {
+      ksRepository ??= new KsRepository(
+        path.join(app.getPath('userData'), 'free-ks.sqlite'),
+      );
+      return ksRepository;
+    },
+    () => window,
+    assertSender,
+    log,
+  );
   ipcMain.handle(channels.info, (event, input: unknown) => {
     assertSender(event);
     noInput.parse(input);
@@ -196,6 +210,8 @@ app.on('second-instance', () => {
   window?.focus();
 });
 app.on('will-quit', () => {
+  ksRepository?.close();
+  ksRepository = null;
   repository?.close();
   repository = null;
 });

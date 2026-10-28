@@ -1,5 +1,13 @@
 # Running implementation checklist
 
+## Crimean War Free Kriegsspiel module and CI reliability - 2026-10-27
+
+- [x] Confirm scope: Crimean peninsula plus Sevastopol/Balaklava detail. Research and download actual period maps; preserve source dates, reuse credits, printed troop-position caveats and full-resolution scans.
+- [x] Add separate Free KS domain, storage/database, validated IPC and replayable rulings; no Maurice schema, phases, movement costs or outcome engine. Empty umpire-entered roster, normalized sheet positions, planned intent distinct from movement, explicit clock and narrative decisions.
+- [x] Finish module switching, map/counter workspace, manual placement and cross-sheet transfers, force editing, time, narrative journal and portable backups. Protect drafts, clear old context actions on new campaigns, and preserve existing Maurice campaigns.
+- [x] Inspect the last three failed GitHub Actions runs: recovery and historical persistence tests exceeded the default five-second limit. Give those two replay-heavy cases explicit 30-second limits without retries or removed assertions.
+- [x] Complete 0.18.0 acceptance: the final sequential npm test run passes all 324 unit/integration checks with the workflow?s two-worker configuration; the final full desktop run passes all 52 built/packaged checks. Offline development startup, TypeScript, lint, formatting, production build and Windows unpacked packaging pass. New coverage includes free placement and descriptive strengths, intent without movement, cancellation, deliberate cross-sheet transfer retaining identity, explicit clock/notes, stale revisions, transactional journal rollback, restart, replay/tamper rejection, duplicate import rejection, draft protection and context reset. Verify a newer KS database is preserved without blocking Maurice, and the existing Maurice campaign remains unchanged. Extend the exact preload API allowlist only for the six validated KS methods and reject unexpected path arguments. Replace an unstable oversized-ledger element screenshot with a viewport capture, preserving the Epic Points assertions. A concurrent unit/desktop verification run hit the existing scouting five-second limit; final verification was serialized to match CI and passed without changing that test?s timeout. Inspect the packaged real-map workspace and retain screenshots under ignored release/ui-review. Verify both bundled scans, source credits and private-reference exclusion in the asar. Source dates are 1855 and 1856; no historical OOB or automatic adjudication is invented. No player saves changed and no commit/push/publish performed. Remote CI still requires the changes to be pushed.
+
 ## Expanded regional maneuver map - 2026-10-27
 
 - [x] Audit topology, grid/schema limits, saved routes, clones, export bounds and rendering. Define 36 by 24 extent (864 hexes), with unchanged central coordinates and original rules/scale.
@@ -358,3 +366,21 @@ Milestones A–C were completed before beginning D. Operational movement now use
 - `npm run test:dev`: **one passing** offline development launch/style/image check. Packaged campaign outcome screenshot visually inspected. Native dialog answers are automated in isolated test profiles; human tabletop playtesting and installer signing/execution remain outside this local verification.
 - Existing saves and historical snapshots are retained; F is explicitly enabled. SQL migration 001/export 2 remain unchanged. No player campaign data/private reference PDFs were used, no official tactical calculation or card effect was added, and no push/publish was performed.
 - Milestone G is next. Its campaign summaries, additional printouts, previous-turn forks and human playtesting remain unimplemented. The dedicated interface simplification pass follows the functional milestones.
+
+## Alma historical deployment area — 0.19.0
+
+- [x] Dated British, French, Ottoman and Russian source catalogue with organization paths and citations.
+- [x] Explicit uncertainty/detachment/aggregate labels; no invented subordinate Ottoman identities, ratings or positions.
+- [x] Separate off-map staging, one-time catalogue loading and preserved existing forces.
+- [x] Search, individual/group/multiple selection, map preview, cancel and atomic confirmed deployment to either sheet.
+- [x] Persistent source identity in force inspection; duplicate-placement and lost-identity validation.
+- [x] Existing journal/export/import replay supports staging without rewriting older saves.
+- [x] Final build, packaging and regression acceptance results recorded below.
+
+### 0.19.0 acceptance - 2026-10-27
+
+- 330 unit/integration tests pass, including source conservation, immutable identities, duplicate rejection, atomic deployment, export/import replay, edge-safe layouts, group/individual selection and failed-load retry.
+- All 54 built/packaged Electron desktop checks pass. Both deployment flows load all 120 records off-map, preview/cancel without saving, reset previews when switching sheets, confirm selected records, prevent repeat loading, inspect source identity and restore the tray/map after restart.
+- Typecheck, ESLint, whole-project Prettier, production build and unpacked Windows packaging pass. The offline development-startup check also passes. Packaged preview/source screenshots were visually inspected.
+- Coverage and source limitations are documented in CRIMEAN_ALMA_OOB_SOURCES.md. The roster remains a qualified field-army baseline, especially at Ottoman subordinate level; no equal-strength unit conversion or automatic KS outcome rules were introduced.
+- Existing player saves were not edited. New acceptance tests use isolated temporary profiles; the separate KS database and older journal replay remain intact. No commit or push was performed.

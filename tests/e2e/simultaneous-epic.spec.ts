@@ -217,7 +217,9 @@ for (const packaged of [false, true])
       expect(saved.battles).toEqual(opening.battles);
       expect(saved.fontenoy!.siege).toEqual(opening.fontenoy!.siege);
       expect(saved.fontenoy!.units).toEqual(opening.fontenoy!.units);
-      await panel().screenshot({
+      // The ledger assertions above validate the data. Capture the viewport:
+      // an oversized fixed drawer cannot always be scrolled into a stable box.
+      await page.screenshot({
         path: `test-results/${packaged ? 'packaged' : 'built'}-epic-ledger.png`,
       });
       await page

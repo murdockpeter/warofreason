@@ -110,6 +110,18 @@ Regular records propose trained as a house placeholder and permit an umpire to r
 
 The original historical grouping pooled French infantry and horse nationally while splitting Allied arms by service, producing three versus eleven counters and materially different formation-level command packets. Supersede that default with common reported-subunit targets, preserving whole source brigades and unknown complements, while retaining all 143 organization identities. Do not infer equal manpower or combat power from counter counts. Expose source-size badges and an explicit preview/confirmed regroup action for old untouched setups; preserve progressed games and old journal replay. Deployment remains provisional and requires review.
 
+## 2026-10-27 - separate Crimean War Free Kriegsspiel (0.18.0)
+
+Use independent domain/IPC/storage rather than forcing Crimean forces into Maurice types. User-selected scope is the Crimean peninsula plus Sevastopol/Balaklava. Supply actual period scans with explicit source dates: Wyld 1855 and a detailed British Library 1856 sheet. Printed historical troop positions stay reference, separate from live counters. Scans retain independent normalized coordinates with deliberate cross-sheet transfer rulings. No speculative OOB, speed/combat tables, phases, recovery, clock or victory mechanics are seeded. This first playable workspace is for the umpire and exposes all its information; player fog and AI integration remain future work.
+
+The last three GitHub failures showed persistence replay tests timing out at five seconds. Give the two observed long persistence cases 30 seconds each while preserving full assertions. Leave other test budgets and the two-worker configuration unchanged, and validate with the workflow's npm test command.
+
 ## 2026-10-27 - expand the schematic map without changing existing scale (0.17.0)
 
 Provide three times the width and height, centered around the existing board, rather than enlarging hexes or moving saved formations. Preserve original routes, terrain and crossings; new hexes are provisional clear ground and original generated art remains decorative. Use an optional versioned extent and an explicit journalled expansion so old campaigns are unchanged until requested. New historical games receive the expanded board. Keep pan/zoom state local to an isolated viewport component and retain faction filtering. Increase the shared bounded campaign-file allowance from 20 to 64 MiB to accommodate map snapshots while retaining atomic file publication and validation.
+
+## Historical Free KS deployment boundary (0.19.0)
+
+Alma is a dated, explicitly qualified source baseline. Heterogeneous regiments, named battalions, batteries and unresolved aggregates remain different-sized records. The app never converts them into equal-strength game units. Source gaps remain visible, especially the Ottoman subordinate roster and detached French cavalry.
+
+An off-map tray avoids fake starting coordinates. Selecting and previewing are reversible local UI actions; confirming is an atomic audited setup decision. Placement transfers identities rather than cloning them, and catalogues cannot be loaded twice into one campaign. Existing custom forces remain the umpire's responsibility to reconcile with the historical roster. No automatic combat, distance or movement calculation follows from a pasted layout.

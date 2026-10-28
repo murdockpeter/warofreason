@@ -13,3 +13,27 @@ The application includes their contributor attribution, source revision links
 and description of adaptations in Historical OOB > Sources and unresolved
 questions. Repository references are recorded in docs/HISTORICAL_OOB_SOURCES.md.
 This exception applies to those data adaptations, not to application code.
+
+Exception for the bundled Crimean War map scans:
+The two historical maps in assets/maps/crimea are public-domain works and are
+not covered by the application-code rights reservation above.
+
+1. James Wyld, The Crimea (London, 1 May 1855).
+   Library of Congress, Geography and Map Division; item 2015591080.
+   https://www.loc.gov/item/2015591080/
+   Digital copy obtained via Wikimedia Commons:
+   https://commons.wikimedia.org/wiki/File:The_Crimea_LOC_2015591080.jpg
+   LOC states its Geography and Map digitized collection is free to use and
+   reuse unless an item-specific Rights Advisory indicates otherwise.
+
+2. Military sketch of the fortress of Sevastopol and adjacent country,
+   from Richard Airey's Opening address (1856), British Library HMNTS 9077.e.15.
+   British Library Mechanical Curator collection, via Wikimedia Commons:
+   https://commons.wikimedia.org/wiki/File:Fortress_of_SEVASTOPOL_and_adjacent_country.jpg
+   The file is identified as public domain, including pre-1931 US publication.
+   The source notes scan enhancement for machine interpretation. The app adds
+   live overlays separately; historical troop positions remain printed in the scan.
+
+Source metadata, download URLs, dimensions and checksums are recorded in
+assets/maps/crimea/SOURCES.md. These notices do not license Maurice tactical
+rules or alter the licensing of the application code.

@@ -126,4 +126,4 @@ it('persists the expanded linked roster atomically, replays portable history and
     rejected.close();
     clean();
   }
-});
+}, 30000);

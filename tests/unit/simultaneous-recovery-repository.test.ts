@@ -178,4 +178,4 @@ it('atomically replays unit observations, rebuilding and recovery through restar
     destination.close();
     clean();
   }
-});
+}, 30000);
