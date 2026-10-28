@@ -785,7 +785,7 @@ describe('file transfer safety', () => {
     );
     expect(() => readCampaignFile(filename)).toThrow();
     writeFileSync(filename, Buffer.alloc(maxCampaignFileBytes + 1));
-    expect(() => readCampaignFile(filename)).toThrow('20 MiB');
+    expect(() => readCampaignFile(filename)).toThrow('64 MiB');
     expect(repo.library()).toEqual(before);
   });
 });

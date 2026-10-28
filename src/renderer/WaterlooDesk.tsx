@@ -1,4 +1,13 @@
 import { DeskDrawer } from './DeskDrawer';
+import { MapViewport } from './MapViewport';
+import {
+  canExpandRegionalMap,
+  hasOriginalFontenoyMap,
+  hexPoint,
+  originalViewBox,
+  regionalViewBox,
+} from '../domain/regional-map';
+import regionalBackdrop from '../../assets/maps/fontenoy-1745-regional-backdrop-v2.png';
 import { SavedMovementRoutes } from './SavedMovementRoutes';
 import {
   HistoricalProfileReview,
@@ -26,7 +35,7 @@ import {
 import { ReaderDialog } from './ReaderDialog';
 import { SimultaneousCommanders } from './SimultaneousCommanders';
 import { SimultaneousSiegePanel } from './SimultaneousSiege';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type {
   WaterlooBattle,
   WaterlooCampaign,
@@ -43,7 +52,7 @@ import {
   travelMinutes,
   validateOrders,
   firstMovementAt,
-  inZone,
+  zoneHexes,
 } from '../domain/waterloo';
 import { preparationIsMutable } from '../domain/waterloo-preparation';
 import { WaterlooPreparation } from './WaterlooPreparation';
@@ -145,10 +154,24 @@ export function WaterlooDesk({ campaign: c }: { campaign: WaterlooCampaign }) {
     (r) => r.requestId === reportSelection,
   );
   const visible = (f: WaterlooCorps) => view === 'umpire' || f.side === view;
-  const at = (id: string) => {
-    const h = c.hexes.find((h) => h.id === id)!;
-    return { x: 45 + h.q * 52 + h.r * 26, y: 40 + h.r * 45 };
-  };
+  const hexById = useMemo(
+    () => new Map(c.hexes.map((h) => [h.id, h])),
+    [c.hexes],
+  );
+  const at = (id: string) => hexPoint(hexById.get(id)!);
+  const mapBounds = c.fontenoy?.regionalMap ? regionalViewBox : originalViewBox;
+  const zoneHighlights = useMemo(() => {
+    const result = new Set<string>();
+    if (overlay === 'control' || overlay === 'influence')
+      for (const f of c.corps.filter(
+        (f) =>
+          f.side === side &&
+          (overlay !== 'influence' || f.kind !== 'detachment'),
+      ))
+        for (const id of zoneHexes(c, f, overlay === 'control' ? 1 : 2))
+          result.add(id);
+    return result;
+  }, [c, side, overlay]);
   const commit = (command: Parameters<typeof state.commitWaterloo>[0]) => {
     void state.commitWaterloo(command);
   };
@@ -1236,6 +1259,56 @@ export function WaterlooDesk({ campaign: c }: { campaign: WaterlooCampaign }) {
               lanes do not define movement; hex data and configured roads do.
             </p>
           )}{' '}
+          {c.fontenoy && (
+            <section aria-label="Regional map size">
+              <h3>
+                {c.fontenoy.regionalMap
+                  ? 'Regional map: 36 by 24 hexes'
+                  : 'Campaign map: 12 by 8 hexes'}
+              </h3>
+              {hasOriginalFontenoyMap(c) && (
+                <>
+                  <p>
+                    Expand to 36 by 24 hexes: nine times the playable area, with
+                    new space on every edge. Existing positions, routes, roads
+                    and scale stay intact. Added hexes are schematic clear
+                    ground; the illustration does not define movement terrain.
+                  </p>
+                  {view === 'umpire' ? (
+                    <>
+                      <button
+                        disabled={
+                          state.pending ||
+                          !!state.waterlooDraft ||
+                          !canExpandRegionalMap(c)
+                        }
+                        onClick={() => commit({ kind: 'expand-regional-map' })}
+                      >
+                        Expand campaign map
+                      </button>
+                      {!canExpandRegionalMap(c) && (
+                        <p>
+                          Expand during unlocked planning after preparation is
+                          completed. Finish the current phase or reopen locked
+                          orders first.
+                        </p>
+                      )}
+                    </>
+                  ) : (
+                    <p>Switch Map view to Umpire to expand this campaign.</p>
+                  )}
+                </>
+              )}
+              {c.fontenoy.regionalMap && (
+                <p>
+                  Use Fit region to see all 864 hexes, or zoom and drag to plan
+                  routes. Negative coordinates identify the added western and
+                  northern hexes. Illustrated terrain remains decorative; added
+                  hexes are provisional clear ground.
+                </p>
+              )}
+            </section>
+          )}
           <div className="form-grid">
             {c.fontenoy && (
               <label className="fontenoy-backdrop-toggle">
@@ -1304,10 +1377,12 @@ export function WaterlooDesk({ campaign: c }: { campaign: WaterlooCampaign }) {
         aria-label="Hex campaign map"
       >
         <div className="map-scroll">
-          <svg
-            viewBox="0 0 940 465"
-            className={`waterloo-map${c.fontenoy && showBackdrop ? ' fontenoy-period-map' : ''}`}
-            aria-label={
+          <MapViewport
+            key={`${c.id}-${c.fontenoy?.regionalMap ?? 'original'}`}
+            expanded={!!c.fontenoy?.regionalMap}
+            focus={force?.hexId ? at(force.hexId) : undefined}
+            period={!!c.fontenoy && showBackdrop}
+            label={
               c.fontenoy
                 ? 'Fontenoy operational map'
                 : 'Operational reference map'
@@ -1316,21 +1391,29 @@ export function WaterlooDesk({ campaign: c }: { campaign: WaterlooCampaign }) {
             {c.fontenoy && showBackdrop && (
               <g aria-hidden="true" className="fontenoy-map-art">
                 <image
-                  href={fontenoyBackdrop}
-                  x="0"
-                  y="0"
-                  width="940"
-                  height="465"
+                  href={
+                    c.fontenoy?.regionalMap
+                      ? regionalBackdrop
+                      : fontenoyBackdrop
+                  }
+                  x={mapBounds.x}
+                  y={mapBounds.y}
+                  width={mapBounds.width}
+                  height={mapBounds.height}
                   preserveAspectRatio="xMidYMid slice"
                 />
-                <rect width="940" height="465" fill="#f3e6c9" opacity="0.2" />
+                <rect
+                  x={mapBounds.x}
+                  y={mapBounds.y}
+                  width={mapBounds.width}
+                  height={mapBounds.height}
+                  fill="#f3e6c9"
+                  opacity="0.2"
+                />
               </g>
             )}
             {c.hexes.map((h) => {
               const p = at(h.id);
-              const own = c.corps.filter(
-                (f) => f.side === side && f.status === 'ready',
-              );
               const hq =
                 c.hqs.find(
                   (h) =>
@@ -1341,16 +1424,12 @@ export function WaterlooDesk({ campaign: c }: { campaign: WaterlooCampaign }) {
                   (h) => (h.army === 'french') === (side === 'french'),
                 )!;
               const highlighted =
-                overlay === 'control'
-                  ? own.some((f) => inZone(c, h.id, f, 1))
-                  : overlay === 'influence'
-                    ? own.some(
-                        (f) => f.kind !== 'detachment' && inZone(c, h.id, f, 2),
-                      )
-                    : overlay === 'command'
-                      ? hexDistance(c, h.id, hq.hexId) <=
-                        (hq.mode === 'normal' ? hq.normalRange : hq.battleRange)
-                      : false;
+                overlay === 'control' || overlay === 'influence'
+                  ? zoneHighlights.has(h.id)
+                  : overlay === 'command'
+                    ? hexDistance(c, h.id, hq.hexId) <=
+                      (hq.mode === 'normal' ? hq.normalRange : hq.battleRange)
+                    : false;
               return (
                 <g
                   key={h.id}
@@ -1407,7 +1486,11 @@ export function WaterlooDesk({ campaign: c }: { campaign: WaterlooCampaign }) {
                   <text
                     x={p.x}
                     y={p.y + 20}
-                    className="hex-label"
+                    className={
+                      h.name
+                        ? 'hex-label hex-location-label'
+                        : 'hex-label hex-coordinate-label'
+                    }
                     textAnchor="middle"
                   >
                     {h.name || h.id}
@@ -1636,7 +1719,7 @@ export function WaterlooDesk({ campaign: c }: { campaign: WaterlooCampaign }) {
                 </g>
               );
             })}
-          </svg>
+          </MapViewport>
         </div>
       </section>
     </div>

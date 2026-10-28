@@ -297,8 +297,8 @@ export const waterlooCampaignSchema = z
       'checkpoint',
     ]),
     charts: waterlooChartsSchema,
-    hexes: z.array(hexSchema).min(1).max(400),
-    edges: z.array(hexEdgeSchema).max(1500),
+    hexes: z.array(hexSchema).min(1).max(1200),
+    edges: z.array(hexEdgeSchema).max(4000),
     corps: z.array(corpsSchema).min(2).max(100),
     hqs: z.array(hqSchema).min(2).max(20),
     submissions: z.array(submissionSchema).length(2),
@@ -360,6 +360,7 @@ export const waterlooCampaignSchema = z
             progress: z.number().int().min(0).max(10000),
           })
           .strict(),
+        regionalMap: z.literal('fontenoy_region_3x_v0.1').optional(),
         kilometresPerHex: z.number().positive().nullable(),
         sourceSchedule: scheduleSchema,
       })
@@ -371,6 +372,21 @@ export const waterlooCampaignSchema = z
     const issue = (message: string) =>
       ctx.addIssue({ code: 'custom', message });
     const hexes = new Set(c.hexes.map((h) => h.id));
+    if (
+      c.fontenoy?.regionalMap &&
+      (c.hexes.length !== 864 ||
+        c.hexes.some(
+          (h) =>
+            h.q < -12 ||
+            h.q > 23 ||
+            h.r < -8 ||
+            h.r > 15 ||
+            h.id !== `${h.q},${h.r}`,
+        ))
+    )
+      issue(
+        'The regional Fontenoy map requires all 864 hexes in its versioned 36 by 24 extent.',
+      );
     const corps = new Set(c.corps.map((f) => f.id));
     for (const message of manualRecordIssues(c)) issue(message);
     if (
@@ -854,9 +870,10 @@ export const waterlooCampaignSchema = z
         issue('Unknown edge endpoint.');
     const edgeIds = c.edges.map((e) => [e.from, e.to].sort().join(':'));
     if (new Set(edgeIds).size !== edgeIds.length) issue('Duplicate map edge.');
+    const edgeHexes = new Map(c.hexes.map((h) => [h.id, h]));
     for (const e of c.edges) {
-      const a = c.hexes.find((h) => h.id === e.from),
-        b = c.hexes.find((h) => h.id === e.to);
+      const a = edgeHexes.get(e.from),
+        b = edgeHexes.get(e.to);
       if (
         a &&
         b &&
@@ -953,6 +970,7 @@ export type WaterlooMarch = z.infer<typeof marchSchema>;
 export type ReinforcementEstimate = z.infer<typeof reinforcementSchema>;
 export type WithdrawalOrder = z.infer<typeof withdrawalOrderSchema>;
 export const waterlooCommandSchema = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('expand-regional-map') }).strict(),
   z
     .object({
       kind: z.literal('historical-regroup'),

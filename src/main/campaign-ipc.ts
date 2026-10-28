@@ -104,6 +104,7 @@ export function registerCampaignIpc(
           'manual-adjudication',
           'historical-roster-review',
           'historical-regroup',
+          'expand-regional-map',
           'result',
           'approve-result',
           'finalize',

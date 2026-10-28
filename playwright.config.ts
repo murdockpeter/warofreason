@@ -23,6 +23,7 @@ export default defineConfig({
     'manual-adjudication.spec.ts',
     'saved-movement-routes.spec.ts',
     'historical-profile.spec.ts',
+    'regional-map.spec.ts',
   ],
   workers: 1,
   timeout: 45000,

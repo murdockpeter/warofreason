@@ -1,4 +1,6 @@
 import { applyManualAdjudication } from './manual-adjudication';
+import { applyRegionalExpansion } from './regional-map';
+import { axialNeighbors } from './regional-map';
 import {
   applyHistoricalReview,
   applyHistoricalRegroup,
@@ -74,21 +76,41 @@ export function inZone(
   radius: number,
 ) {
   if (opponent.status !== 'ready' || !opponent.hexId) return false;
-  if (hexId === opponent.hexId) return true;
+  if (hexDistance(c, hexId, opponent.hexId) > radius) return false;
+  return zoneHexes(c, opponent, radius).has(hexId);
+}
+export function zoneHexes(c: Campaign, opponent: Corps, radius: number) {
+  if (opponent.status !== 'ready' || !opponent.hexId) return new Set<string>();
+  const byId = new Map(c.hexes.map((h) => [h.id, h]));
+  const byCoordinate = new Map(c.hexes.map((h) => [`${h.q},${h.r}`, h]));
+  const blocked = new Set(
+    c.edges
+      .filter((e) => e.crossing === 'major')
+      .map((e) => [e.from, e.to].sort().join(':')),
+  );
   let frontier = [opponent.hexId];
   const seen = new Set(frontier);
   for (let i = 0; i < radius; i++) {
     const next: string[] = [];
-    for (const from of frontier)
-      for (const h of c.hexes)
-        if (!seen.has(h.id) && landEdge(c, from, h.id)) {
-          if (h.id === hexId) return true;
+    for (const from of frontier) {
+      const origin = byId.get(from);
+      if (!origin) continue;
+      for (const [dq, dr] of axialNeighbors) {
+        const h = byCoordinate.get(`${origin.q + dq},${origin.r + dr}`);
+        if (
+          h &&
+          !seen.has(h.id) &&
+          h.terrain !== 'water' &&
+          !blocked.has([from, h.id].sort().join(':'))
+        ) {
           seen.add(h.id);
           next.push(h.id);
         }
+      }
+    }
     frontier = next;
   }
-  return false;
+  return seen;
 }
 const allowance = (f: Corps) =>
   f.kind === 'infantry'
@@ -973,12 +995,19 @@ export function applyWaterlooCommand(
   if (
     c.fontenoy?.historicalProfile &&
     !c.fontenoy.historicalProfile.reviewedAt &&
-    !['historical-roster-review', 'historical-regroup'].includes(command.kind)
+    ![
+      'historical-roster-review',
+      'historical-regroup',
+      'expand-regional-map',
+    ].includes(command.kind)
   )
     throw new Error(
       'Review the historical roster scale, provisional deployment and scenario ratings before campaign actions.',
     );
   switch (command.kind) {
+    case 'expand-regional-map':
+      applyRegionalExpansion(c);
+      break;
     case 'historical-regroup':
       applyHistoricalRegroup(c, { command, recordId, timestamp });
       break;

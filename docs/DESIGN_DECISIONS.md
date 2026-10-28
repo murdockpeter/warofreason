@@ -109,3 +109,7 @@ Regular records propose trained as a house placeholder and permit an umpire to r
 ## 2026-10-27 - compare formations on a common grouping basis (0.16.1)
 
 The original historical grouping pooled French infantry and horse nationally while splitting Allied arms by service, producing three versus eleven counters and materially different formation-level command packets. Supersede that default with common reported-subunit targets, preserving whole source brigades and unknown complements, while retaining all 143 organization identities. Do not infer equal manpower or combat power from counter counts. Expose source-size badges and an explicit preview/confirmed regroup action for old untouched setups; preserve progressed games and old journal replay. Deployment remains provisional and requires review.
+
+## 2026-10-27 - expand the schematic map without changing existing scale (0.17.0)
+
+Provide three times the width and height, centered around the existing board, rather than enlarging hexes or moving saved formations. Preserve original routes, terrain and crossings; new hexes are provisional clear ground and original generated art remains decorative. Use an optional versioned extent and an explicit journalled expansion so old campaigns are unchanged until requested. New historical games receive the expanded board. Keep pan/zoom state local to an isolated viewport component and retain faction filtering. Increase the shared bounded campaign-file allowance from 20 to 64 MiB to accommodate map snapshots while retaining atomic file publication and validation.

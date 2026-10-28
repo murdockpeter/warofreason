@@ -13,7 +13,7 @@ import { exportSchema } from '../../domain/campaign';
 import type { CampaignExport } from '../../domain/campaign';
 import { CampaignError } from './errors';
 
-export const maxCampaignFileBytes = 20 * 1024 * 1024;
+export const maxCampaignFileBytes = 64 * 1024 * 1024;
 export function readCampaignFile(filename: string): CampaignExport {
   const descriptor = openSync(filename, 'r');
   let text: string;
@@ -22,9 +22,9 @@ export function readCampaignFile(filename: string): CampaignExport {
     if (!stat.isFile() || stat.size > maxCampaignFileBytes)
       throw new CampaignError(
         'file',
-        'Choose a regular campaign JSON file no larger than 20 MiB.',
+        'Choose a regular campaign JSON file no larger than 64 MiB.',
       );
-    const buffer = Buffer.alloc(maxCampaignFileBytes + 1);
+    const buffer = Buffer.alloc(Math.min(maxCampaignFileBytes, stat.size) + 1);
     let length = 0;
     while (length < buffer.length) {
       const count = readSync(
@@ -40,7 +40,7 @@ export function readCampaignFile(filename: string): CampaignExport {
     if (length > maxCampaignFileBytes)
       throw new CampaignError(
         'file',
-        'Campaign JSON exceeds the 20 MiB import limit.',
+        'Campaign JSON exceeds the 64 MiB import limit.',
       );
     text = buffer.toString('utf8', 0, length).replace(/^\uFEFF/, '');
   } finally {
@@ -73,7 +73,7 @@ export function writeAtomicFile(filename: string, text: string | Uint8Array) {
   if (Buffer.byteLength(text) > maxCampaignFileBytes)
     throw new CampaignError(
       'file',
-      'Campaign export exceeds the 20 MiB limit. Existing files were not changed.',
+      'Campaign export exceeds the 64 MiB limit. Existing files were not changed.',
     );
   const temporary = `${filename}.${randomUUID()}.tmp`;
   let owned = false;

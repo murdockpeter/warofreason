@@ -1,5 +1,12 @@
 # Running implementation checklist
 
+## Expanded regional maneuver map - 2026-10-27
+
+- [x] Audit topology, grid/schema limits, saved routes, clones, export bounds and rendering. Define 36 by 24 extent (864 hexes), with unchanged central coordinates and original rules/scale.
+- [x] Add versioned topology expansion, native-confirmed existing-map action and new historical campaign defaults. Keep original roads, crossings, terrain, HQs, formations and submitted routes; new space is provisional clear ground.
+- [x] Generate and save an expanded period landscape using the imagegen skill's built-in tool, retaining old art for old maps. Add local map-camera zoom/pan, fit region and selected-formation centring.
+- [x] Complete 0.17.0 acceptance: all 316 unit/integration tests and all 49 built/packaged desktop checks pass. Offline development startup, TypeScript, lint, formatting, production build and Windows unpacked packaging pass. Cover topology connectivity/conservation, submitted orders, unchanged travel costs, normal movement beyond the former edge, manual placement, replay/tamper rejection/import, clone compatibility, native cancellation, pan/zoom without state changes, faction privacy and restart. Preserve prior zone behavior with a comparison against the previous exhaustive traversal. Inspect packaged regional overview, normal zoom and the actual 28-formation historical roster; artifacts are under ignored release/ui-review. Packaged regional artwork, attribution and private-research exclusion verified. No player saves changed and no commit/push/publish performed.
+
 ## Comparable historical map formations - 2026-10-27
 
 - [x] Diagnose 3 French versus 11 Allied counters: French infantry/horse were each pooled nationally while Allies were split by service, affecting both map presentation and formation orders.

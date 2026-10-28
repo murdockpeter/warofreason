@@ -14,6 +14,7 @@ import {
   historicalGroupingVersion,
 } from './historical-grouping';
 import { historicalRosterText } from './historical-profile';
+import { expandRegionalTopology } from './regional-map';
 
 const grouping = (o: HistoricalOrganization) =>
   `${o.service}-${['cavalry', 'dragoons', 'hussars'].includes(o.arm) ? 'horse' : o.arm === 'artillery' ? 'artillery' : 'foot'}`;
@@ -139,6 +140,7 @@ export function seedHistoricalFontenoy(
       .map((u) => ({ unitId: u.id, quality: 'trained' })),
   };
   if (groupingVersion === historicalGroupingVersion) {
+    expandRegionalTopology(c);
     assignHistoricalGroups(
       c,
       historicalFormationGroups.map(() => uuid()),
@@ -150,6 +152,11 @@ export function seedHistoricalFontenoy(
       );
   }
   c.log = [
+    ...(m.regionalMap
+      ? [
+          'Regional schematic map: 36 by 24 hexes, with the original operating area at its centre. Added hexes are provisional clear ground; decorative terrain does not define movement.',
+        ]
+      : []),
     `Historical Fontenoy battle-date roster: 143 named regimental/aggregate records in ${c.corps.length} provisional campaign groupings. Opening date 11 May 1745.`,
     'Names, source hierarchy and reported complements are linked to catalogue 0.1.0. Individual subordinate identifiers are not invented when the source gives only battalion/squadron counts.',
     'One roster record represents its historical organization, not a fixed number of Maurice units. All regular ratings start as trained placeholders, pending explicit review. Map deployment is provisional.',
